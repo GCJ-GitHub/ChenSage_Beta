@@ -1,207 +1,190 @@
-# ChenSage_Beta
+# ChenSage AgentOS
 
-> 晨枢 AI Beta1.0：个人 AI 任务中枢平台的本地云原生微服务化设计仓库。
+> 个人 AI 任务中枢 + 多 Agent 编排 + 活记忆 + 工具协议 + 可靠任务执行。
 
-## 项目简介
+ChenSage AgentOS 是 ChenSage_Beta 的新版架构方向。项目定位从原来的“本地云原生微服务平台”升级为“Agent-native 个人 AI 操作系统”。
 
-ChenSage（晨枢 AI）是一个面向个人知识工作者的 AI 任务中枢平台。MVP1.0 已经完成了本地单体版本的核心功能探索，包括内容生成、信息搜集、arXiv 日报、提示词模板、历史任务与导出等能力。
+它不再只是内容生成、信息搜集、面试训练、arXiv 日报等功能集合，而是一个面向个人知识工作者的 Agent 平台：
 
-本仓库是 ChenSage_Beta1.0 阶段的设计与工程化规划仓库，目标是把 MVP1.0 从本地单体逐步演进为可容器化、可观测、可扩展、可部署的本地云原生系统。
+```text
+用户提出目标
+  -> 系统理解意图
+  -> planner-agent 拆解任务
+  -> 多个 subagent 协作
+  -> 调用工具和模型
+  -> 读写活记忆
+  -> 形成结果
+  -> 自动评估和复盘
+  -> 把经验沉淀回记忆
+```
 
-Beta1.0 当前重点不是立刻上线多人企业 SaaS，而是：
+原有的 PostgreSQL、RabbitMQ、Redis、MinIO、Docker Compose、OpenTelemetry 等工程能力不会丢，它们会成为 AgentOS 的可靠底座。
 
-- 保持个人自用体验稳定。
-- 引入企业级工程约束，练习云原生与微服务能力。
-- 建立清晰的服务边界、数据边界、任务队列、日志、监控、CI/CD 和安全基线。
-- 为未来上线个人版或小规模私有部署预留演进空间。
+## 核心定位
 
-## 当前阶段
+ChenSage AgentOS 面向个人知识工作者，目标是把 AI 从“单次问答工具”升级为“能规划、执行、协作、记忆和复盘的个人任务系统”。
 
-当前仓库处于 Beta1.0 架构设计阶段，主要内容是文档，不是完整可运行代码仓库。
+Beta 阶段优先解决五件事：
 
-已完成文档：
-
-- `文档/架构设计与技术选型.md`
-- `文档/技术决策Q&A.md`
-
-后续代码落地会围绕这些文档逐步补齐：
-
-- Docker Compose 本地开发环境
-- PostgreSQL / RabbitMQ / Redis / MinIO 基础设施
-- FastAPI 微服务
-- Celery Worker
-- Next.js 前端
-- OpenTelemetry / Prometheus / Grafana / Loki 可观测性
-- kind / Kubernetes 本地集群部署
-- GitHub Actions CI/CD
+- 多 Agent 协作：让 planner、research、content、critic、memory、file 等 agent 各司其职。
+- 可靠任务执行：长任务进入队列，支持状态管理、重试、取消、审批和失败恢复。
+- 活记忆：系统能持续沉淀用户偏好、任务经验、工作流程和复盘结论。
+- 工具协议：把搜索、arXiv、文件解析、导出、记忆检索、模型调用等能力统一成可治理工具。
+- Agent 可观测性：看清每一步 plan、act、observe、evaluate、revise 的过程、成本和质量。
 
 ## 目标架构
 
-Beta1.0 推荐架构：
-
 ```text
-Browser
-  |
-  v
-Ingress / Nginx
+Browser / Next.js
   |
   v
 gateway
   |
-  +--> auth-svc
-  +--> model-svc
-  +--> file-svc
+  v
+agent-orchestrator
+  |
+  +--> planner-agent
+  +--> research-agent
+  +--> content-agent
+  +--> interview-agent
+  +--> critic-agent
+  +--> memory-agent
+  +--> file-agent
+
+agent-orchestrator
+  |
+  +--> agent-harness
+  +--> loop-engine
+  +--> context-engine
+  +--> tool-registry
+  +--> living-memory-svc
+  +--> eval-svc
+  +--> policy-svc
   +--> task-svc
-  +--> content-svc
-  +--> interview-svc
-  +--> research-svc
 
-task-svc  <--> RabbitMQ <--> worker
-worker    <--> model-svc
-file-svc  <--> MinIO
-services  <--> PostgreSQL
-services  <--> Redis
+task-svc -> RabbitMQ -> worker
+worker -> model-svc
+worker -> tool-registry
+file-svc -> MinIO
 
-Observability:
-Prometheus + Grafana + Loki + OpenTelemetry
+services -> PostgreSQL + pgvector
+services -> Redis
+
+observability:
+OpenTelemetry + Prometheus + Grafana + Loki
 ```
 
-## 核心技术选型
+## 新概念速览
 
-| 层级 | 选型 | 说明 |
-|------|------|------|
-| 后端语言 | Python 3.12 / 3.13 | 优先稳定生态，复用 MVP Python 资产 |
-| Web 框架 | FastAPI | 适合 OpenAPI、异步 API 和快速迭代 |
-| 前端 | Next.js 16 + React 19 | 延续 MVP 前端技术栈 |
-| 数据库 | PostgreSQL 16 | 替代 SQLite，支持多 schema |
-| ORM / Migration | SQLAlchemy 2.x + Alembic | 每服务独立 migration |
-| 队列 | RabbitMQ + Celery | 可靠长任务、重试、死信队列 |
-| 缓存 | Redis 7 | 缓存、限流、短状态 |
-| 对象存储 | MinIO | 本地 S3 兼容对象存储 |
-| 本地容器 | Docker / Docker Compose | 日常开发主入口 |
-| 本地 Kubernetes | kind + kubectl + Helm | 本地云原生学习与验证 |
-| 可观测性 | OpenTelemetry + Prometheus + Grafana + Loki | 日志、指标、链路追踪 |
-| CI/CD | GitHub Actions | 测试、构建、扫描、交付 |
+### Agent-native
 
-## 推荐本地环境
+Agent-native 表示系统不是把 AI 当作某个接口的附属能力，而是以 Agent 的规划、执行、观察、评估、修正为核心运行模型。页面、API、任务队列和数据库都围绕 Agent 工作流设计。
 
-建议在 Windows + WSL2 或 Linux 环境下开发。
+### Agent Orchestrator
 
-基础环境：
+`agent-orchestrator` 是新版核心服务。它负责任务理解、Agent 调度、执行计划管理、Agent 间协作和任务状态同步。它不直接吞掉所有业务逻辑，而是决定“谁来做、按什么顺序做、失败后怎么办”。
 
-- Git
-- Docker Desktop，启用 WSL2 backend
-- WSL2 Ubuntu
-- Node.js 20 LTS 或更高 LTS 版本
-- npm / pnpm
-- Python 3.12 或 3.13
-- pip / uv
+### Agent Harness
 
-云原生工具：
+`agent-harness` 是 Agent 的运行套件。每个 Agent 都挂在统一 harness 上，避免重复实现工具调用、记忆访问、模型路由、重试、日志、权限和输出校验。
 
-- Docker Compose
-- kubectl
-- kind
-- Helm
+### Loop Engine
 
-Beta 基础设施组件建议优先通过 Docker Compose 启动，不建议直接安装到宿主机：
-
-- PostgreSQL 16
-- RabbitMQ
-- Redis 7
-- MinIO
-- Prometheus
-- Grafana
-- Loki
-
-## 环境检查命令
-
-```powershell
-git --version
-docker --version
-docker compose version
-wsl --status
-node --version
-npm --version
-python --version
-pip --version
-kubectl version --client
-kind version
-helm version
-```
-
-## 计划中的本地启动方式
-
-后续代码落地后，优先提供：
-
-```powershell
-docker compose up -d
-```
-
-以及：
-
-```powershell
-make compose-up
-make compose-down
-make kind-deploy
-```
-
-当前仓库还没有完整服务代码和 Compose 文件，因此上述命令属于 Beta1.0 后续落地目标。
-
-## 服务拆分原则
-
-本项目虽然是个人项目，但 Beta1.0 会按企业级工程约束设计服务边界：
-
-- 不按页面菜单机械拆服务。
-- 按领域边界、数据归属、任务状态和运行特征拆分。
-- `task-svc` 只负责任务生命周期，不收纳所有业务逻辑。
-- `shared` 只共享 DTO、client、事件契约和通用工具，不共享全量 ORM Model。
-- PostgreSQL 初期采用单实例多 schema，每个服务拥有自己的 schema 和 migration。
-
-## 任务系统设计
-
-MVP 阶段的本地线程任务会在 Beta1.0 中替换为：
+`loop-engine` 负责 Agent 循环执行机制：
 
 ```text
-task-svc -> RabbitMQ -> Celery Worker -> model-svc / external APIs
+plan -> act -> observe -> evaluate -> revise -> stop
 ```
 
-原因：
+它必须内置 `max_steps`、`max_tokens`、`max_cost`、`max_duration`、`stop_condition`、`human_approval_required` 等限制，防止无限循环和成本失控。
 
-- AI 任务耗时较长。
-- 模型 API 可能超时、限流或失败。
-- 任务需要持久化、ack、重试、超时、取消和死信队列。
+### Context Engine
 
-Redis 不再作为关键任务事件机制，只用于缓存、限流和短期状态。
+`context-engine` 负责上下文工程。它决定 Agent 每一步能看到什么、不能看到什么、哪些信息要压缩、哪些信息必须带来源。
 
-## 安全与可观测性
+### Living Memory
 
-Beta1.0 会补齐以下工程能力：
+`living-memory-svc` 是活记忆系统。它不是普通聊天历史，而是会持续更新、合并、过期、冲突检测，并接受用户治理的动态记忆系统。
 
-- JWT 登录与刷新 Token
-- API Key / Secret 管理
-- 上传文件类型和大小限制
-- SSRF 防护
-- 审计日志
-- JSON 结构化日志
-- Prometheus 指标
-- OpenTelemetry Trace
-- Grafana 可视化面板
-- Loki 日志收集
-- GitHub Actions 自动测试与构建
+记忆类型包括：
 
-## 路线图
+- working memory：当前任务临时记忆。
+- episodic memory：任务经历和事件。
+- semantic memory：稳定知识和用户偏好。
+- procedural memory：做事方法和流程经验。
+- reflective memory：Agent 复盘总结。
+- governed memory：用户确认、冻结、删除的记忆。
 
-1. 文档和边界确认
-2. 本地 Compose 云原生底座
-3. PostgreSQL 替换 SQLite
-4. RabbitMQ + Celery 替换本地线程
-5. MinIO 替换本地文件路径
-6. API / Web / Worker 容器化
-7. gateway / model-svc / task-svc / file-svc / research-svc 等服务拆分
-8. 可观测性、安全和 CI/CD
-9. kind 本地 Kubernetes 集群部署
-10. 小规模上线准备
+### Tool Registry
+
+`tool-registry` 是工具注册中心，统一管理内部工具和 MCP-style 工具。每个工具都要有权限、输入 schema、输出 schema、审计日志和调用成本。
+
+### Eval Service
+
+`eval-svc` 负责评估 Agent 输出质量，例如事实性、格式、引用来源、完整性、风格一致性，以及是否满足用户目标。
+
+### Policy Service
+
+`policy-svc` 负责权限、安全、审批和成本控制，例如敏感工具调用前审批、外部请求白名单、文件访问权限、模型预算限制、记忆写入规则和高风险操作拦截。
+
+## 第一阶段 Agent
+
+第一阶段建议实现这些 Agent：
+
+| Agent | 职责 |
+|------|------|
+| `planner-agent` | 任务拆解、步骤规划、选择其他 Agent |
+| `research-agent` | 网页搜索、arXiv、资料筛选、信息归纳 |
+| `content-agent` | 文章、短视频脚本、小红书、知乎、歌词、报告创作 |
+| `interview-agent` | 简历分析、问题生成、回答评价、复盘建议 |
+| `critic-agent` | 审稿、挑错、事实核查、质量评估 |
+| `memory-agent` | 整理任务经验，决定哪些内容进入活记忆 |
+| `file-agent` | 文件解析、摘要、导出、格式转换 |
+
+第一版不建议每个 Agent 都独立部署成微服务。更稳的方式是先放在同一个 `agent-svc` 中：
+
+```text
+agent-svc
+  agents/
+    planner_agent.py
+    research_agent.py
+    content_agent.py
+    interview_agent.py
+    critic_agent.py
+    memory_agent.py
+    file_agent.py
+```
+
+等边界稳定后，再把重型 Agent 独立拆服务。
+
+## 技术选型
+
+| 层级 | 选型 |
+|------|------|
+| 主语言 | Python 3.12 / 3.13 |
+| 后端 | FastAPI, SQLAlchemy 2.x, Alembic |
+| 任务队列 | RabbitMQ + Celery |
+| 缓存和短状态 | Redis |
+| 数据库 | PostgreSQL + pgvector |
+| 对象存储 | MinIO |
+| Agent 层 | Python agent runtime, LangGraph 可选 |
+| 工具协议 | MCP-style tool interface |
+| 模型抽象 | OpenAI / Anthropic / Gemini 等 Provider 抽象 |
+| 前端 | Next.js, React, TypeScript |
+| 可观测性 | OpenTelemetry, Prometheus, Grafana, Loki |
+| 本地开发 | Docker Compose |
+| 部署验证 | kind, Kubernetes, Helm / Kustomize |
+
+## 推荐落地路线
+
+1. 架构文档重写：把项目定位改为 Agent-native 个人 AI 操作系统。
+2. 基础底座：落 PostgreSQL、pgvector、RabbitMQ、Redis、MinIO、Docker Compose。
+3. Agent MVP：实现 `agent-orchestrator`、`agent-harness`、`loop-engine`、`model-svc`、`task-svc`、`worker`。
+4. 跑通第一条链路：用户输入目标 -> planner -> research-agent -> content-agent -> critic-agent -> 输出结果。
+5. 活记忆：实现 `living-memory-svc`，支持写入、检索、用户确认、冲突检测、过期降权。
+6. 工具系统：实现 `tool-registry`，把 arXiv、网页搜索、文件解析、导出都工具化。
+7. 观测和评估：补齐 agent trace、tool call trace、token/cost、loop step、eval report。
+8. Kubernetes：Compose 稳定后，再迁移到 kind / K8s 验证部署能力。
 
 ## 文档索引
 
@@ -210,13 +193,3 @@ Beta1.0 会补齐以下工程能力：
 1. `文档/架构设计与技术选型.md`
 2. `文档/技术决策Q&A.md`
 
-其中：
-
-- 架构设计文档是主文档，描述目标架构、技术选型、服务边界和阶段路线。
-- Q&A 文档记录本次架构审阅发现的问题、修改方式和决策理由。
-
-## 项目定位提醒
-
-ChenSage_Beta1.0 是个人项目的本地云原生微服务化版本，不是大型企业团队的通用模板。
-
-它保留“个人自用优先”的约束，同时引入更严谨的工程设计，用于支撑后续上线和长期演进。
