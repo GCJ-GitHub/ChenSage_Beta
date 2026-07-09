@@ -2,6 +2,16 @@
 
 Next.js + React + TypeScript 前端应用。
 
+当前阶段先提供一个不依赖构建工具的静态原型：
+
+```text
+index.html
+styles.css
+app.js
+```
+
+可以直接用浏览器打开 `apps/web/index.html` 预览 AgentOS 工作台。后续进入正式前端开发时，再把这个静态原型迁移到 Next.js 页面和组件。
+
 职责：
 
 - 展示 Agent 任务入口、任务进度、审批卡点和最终结果。

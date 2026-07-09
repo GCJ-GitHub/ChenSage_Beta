@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ChenSage AgentOS 工作台</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">CS</div>
+          <div>
+            <p class="brand-title">ChenSage</p>
+            <p class="brand-subtitle">AgentOS Beta</p>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <button class="nav-item active" type="button" data-section="task">任务中心</button>
+          <button class="nav-item" type="button" data-section="content">内容创作</button>
+          <button class="nav-item" type="button" data-section="interview">模拟面试</button>
+          <button class="nav-item" type="button" data-section="research">信息搜集</button>
+          <button class="nav-item" type="button" data-section="arxiv">arXiv 日报</button>
+          <button class="nav-item" type="button" data-section="model">模型设置</button>
+          <button class="nav-item" type="button" data-section="prompt">提示词模板</button>
+          <button class="nav-item" type="button" data-section="file">文件管理</button>
+        </nav>
+
+        <div class="sidebar-panel">
+          <p class="panel-label">当前主链路</p>
+          <ol class="mini-steps">
+            <li>创建任务</li>
+            <li>队列执行</li>
+            <li>模型调用</li>
+            <li>结果导出</li>
+          </ol>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">个人 AI 任务中枢</p>
+            <h1>AgentOS 工作台</h1>
+          </div>
+          <div class="topbar-actions">
+            <button class="icon-button" type="button" title="查看任务事件">≡</button>
+            <button class="primary-button" type="button">新建任务</button>
+          </div>
+        </header>
+
+        <section class="status-grid" aria-label="系统状态">
+          <article class="metric-card">
+            <p class="metric-label">运行中任务</p>
+            <strong>3</strong>
+            <span>1 个等待模型响应</span>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label">默认模型</p>
+            <strong>gpt-4.1</strong>
+            <span>OpenAI-compatible 已连接</span>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label">今日成本</p>
+            <strong>$1.28</strong>
+            <span>预算使用 18%</span>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label">待审批</p>
+            <strong>2</strong>
+            <span>外部请求与长期记忆</span>
+          </article>
+        </section>
+
+        <section class="main-grid">
+          <section class="task-composer" aria-labelledby="composer-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Task Builder</p>
+                <h2 id="composer-title">创建 Agent 任务</h2>
+              </div>
+              <span class="status-pill">task-svc</span>
+            </div>
+
+            <form class="composer-form">
+              <label>
+                <span>任务类型</span>
+                <select id="task-type">
+                  <option value="content">内容创作 / 改写</option>
+                  <option value="interview">模拟面试</option>
+                  <option value="research">信息搜集</option>
+                  <option value="arxiv">arXiv 日报</option>
+                  <option value="file">文件解析</option>
+                </select>
+              </label>
+
+              <label>
+                <span>目标说明</span>
+                <textarea id="task-goal" rows="7">写一篇公众号文章，主题是 AgentOS 如何帮助个人知识工作者管理长期任务，语气清晰、克制、有专业感。</textarea>
+              </label>
+
+              <div class="form-row">
+                <label>
+                  <span>提示词模板</span>
+                  <select>
+                    <option>公众号深度文章</option>
+                    <option>小红书种草文案</option>
+                    <option>论文摘要改写</option>
+                    <option>面试复盘报告</option>
+                  </select>
+                </label>
+                <label>
+                  <span>输出格式</span>
+                  <select>
+                    <option>Markdown</option>
+                    <option>结构化报告</option>
+                    <option>问答清单</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="composer-footer">
+                <div class="budget-control" aria-label="预算上限">
+                  <span>预算上限</span>
+                  <input type="range" min="1" max="10" value="4" />
+                  <strong>$4</strong>
+                </div>
+                <button class="primary-button" type="button" id="preview-task">预览任务</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="task-preview" aria-labelledby="preview-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Execution Plan</p>
+                <h2 id="preview-title">执行计划</h2>
+              </div>
+              <span class="status-pill warm">agent-svc</span>
+            </div>
+
+            <ol class="timeline" id="plan-list">
+              <li>
+                <span class="step-index">1</span>
+                <div>
+                  <strong>content-agent 读取任务目标</strong>
+                  <p>结合模板、用户偏好和输出格式生成初稿。</p>
+                </div>
+              </li>
+              <li>
+                <span class="step-index">2</span>
+                <div>
+                  <strong>model-svc 调用默认模型</strong>
+                  <p>统一处理 Provider、成本、限流和 trace。</p>
+                </div>
+              </li>
+              <li>
+                <span class="step-index">3</span>
+                <div>
+                  <strong>eval-svc 生成质量报告</strong>
+                  <p>检查完整性、风格一致性和未完成项。</p>
+                </div>
+              </li>
+              <li>
+                <span class="step-index">4</span>
+                <div>
+                  <strong>task-svc 写回结果</strong>
+                  <p>进入历史任务，支持重试和 Markdown 导出。</p>
+                </div>
+              </li>
+            </ol>
+          </section>
+        </section>
+
+        <section class="feature-grid" aria-label="产品功能">
+          <article class="feature-card active" data-feature="content">
+            <span class="feature-code">CONTENT</span>
+            <h3>内容创作</h3>
+            <p>论文、专利、小说、剧本、歌词、小红书、知乎、公众号生成与改写。</p>
+          </article>
+          <article class="feature-card" data-feature="interview">
+            <span class="feature-code">INTERVIEW</span>
+            <h3>模拟面试</h3>
+            <p>简历分析、面试问题、回答评价和复盘报告。</p>
+          </article>
+          <article class="feature-card" data-feature="research">
+            <span class="feature-code">RESEARCH</span>
+            <h3>信息搜集</h3>
+            <p>URL、PDF、JSON、RSS、批量任务、站内发现与汇总报告。</p>
+          </article>
+          <article class="feature-card" data-feature="arxiv">
+            <span class="feature-code">ARXIV</span>
+            <h3>arXiv 日报</h3>
+            <p>研究方向、关键词、分类、收藏论文和范围日报。</p>
+          </article>
+        </section>
+
+        <section class="lower-grid">
+          <section class="task-table-section" aria-labelledby="task-table-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">History</p>
+                <h2 id="task-table-title">历史任务</h2>
+              </div>
+              <button class="secondary-button" type="button">导出 Markdown</button>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>任务</th>
+                    <th>类型</th>
+                    <th>状态</th>
+                    <th>成本</th>
+                    <th>更新时间</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>AgentOS 公众号文章初稿</td>
+                    <td>内容创作</td>
+                    <td><span class="state success">成功</span></td>
+                    <td>$0.42</td>
+                    <td>10 分钟前</td>
+                  </tr>
+                  <tr>
+                    <td>候选人后端岗位模拟面试</td>
+                    <td>模拟面试</td>
+                    <td><span class="state running">运行中</span></td>
+                    <td>$0.31</td>
+                    <td>刚刚</td>
+                  </tr>
+                  <tr>
+                    <td>LLM Agent 研究资料汇总</td>
+                    <td>信息搜集</td>
+                    <td><span class="state waiting">待审批</span></td>
+                    <td>$0.18</td>
+                    <td>24 分钟前</td>
+                  </tr>
+                  <tr>
+                    <td>多模态论文日报</td>
+                    <td>arXiv 日报</td>
+                    <td><span class="state failed">失败</span></td>
+                    <td>$0.09</td>
+                    <td>昨天</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <aside class="config-panel" aria-labelledby="config-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Settings</p>
+                <h2 id="config-title">模型与模板</h2>
+              </div>
+            </div>
+
+            <div class="setting-list">
+              <div class="setting-item">
+                <span>OpenAI-compatible API</span>
+                <strong>已连接</strong>
+              </div>
+              <div class="setting-item">
+                <span>默认模型</span>
+                <strong>gpt-4.1</strong>
+              </div>
+              <div class="setting-item">
+                <span>启用模板</span>
+                <strong>12 个</strong>
+              </div>
+              <div class="setting-item">
+                <span>解析文件</span>
+                <strong>PDF / DOCX / TXT / MD</strong>
+              </div>
+            </div>
+
+            <div class="approval-box">
+              <p class="panel-label">待审批动作</p>
+              <button class="approval-row" type="button">
+                <span>允许访问未知外部域名</span>
+                <strong>审核</strong>
+              </button>
+              <button class="approval-row" type="button">
+                <span>写入长期偏好记忆</span>
+                <strong>审核</strong>
+              </button>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
