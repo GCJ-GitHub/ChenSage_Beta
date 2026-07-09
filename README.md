@@ -34,6 +34,34 @@ Beta 阶段优先解决五件事：
 
 Beta1.0 的范围有意偏向“首次平台底座验证”。它不是只做一个窄功能 demo，而是用一条端到端 Agent 任务链路验证前端、网关、任务队列、Agent 运行、模型调用、工具、记忆、评估和观测这些核心边界是否能协同工作。实现时可以先把部分能力放在同一个代码服务或模块内，但目录、接口和数据所有权要按平台边界设计。
 
+## Beta1.0 产品功能范围
+
+Beta1.0 不是另起一个脱离原 MVP 的平台项目，而是把 MVP 已验证过的个人知识工作功能迁移到 AgentOS 架构中，让它们具备统一任务、队列、模型配置、模板、工具、文件、导出和可观测能力。
+
+| 产品功能 | Beta1.0 目标 |
+|------|------|
+| 内容创作 | 支持论文、专利、小说、剧本、歌词、小红书、知乎、公众号等内容生成与改写 |
+| 模拟面试 | 基于简历和岗位描述生成简历分析、面试问题、回答评价和复盘报告 |
+| 信息搜集 | 支持单 URL / PDF / JSON / RSS、批量多任务、站内信息发现与汇总报告 |
+| arXiv 日报 | 支持研究方向管理、关键词 / 分类配置、按日期和篇数拉取论文、收藏论文、按范围生成日报 |
+| 模型设置 | 支持 OpenAI-compatible API 配置、默认模型、连通性测试 |
+| 提示词模板 | 支持按任务类型维护模板，并在信息搜集、arXiv 日报、内容创作等功能中复用 |
+| 文件管理 | 支持上传并解析 PDF、DOCX、TXT、MD |
+| 历史任务与导出 | 支持统一查看任务、重试、导出 Markdown |
+
+这些功能在 Beta 架构中的归属：
+
+| MVP 功能 | AgentOS 模块 |
+|------|------|
+| 内容创作 / 改写 | `content-agent` + prompt templates + `model-svc` + Markdown 导出 |
+| 模拟面试 | `interview-agent` + `file-svc` 简历解析 + `eval-svc` 回答评价 |
+| 信息搜集 | `research-agent` + URL / PDF / JSON / RSS 工具 + 批量 task |
+| arXiv 日报 | `research-agent` 的 arXiv workflow，后续可拆 `arxiv-agent` |
+| 模型设置 | `model-svc` |
+| 提示词模板 | `agent-svc` 内 prompt registry，后续可拆 `prompt-svc` |
+| 文件管理 | `file-svc` + `tool-registry` 文件解析工具 |
+| 历史任务与导出 | `task-svc` + export tools + `file-svc` |
+
 ## 目标架构
 
 ```text
@@ -248,4 +276,5 @@ tests/                         跨服务契约、集成和端到端测试
 建议按以下顺序阅读：
 
 1. `文档/架构设计与技术选型.md`
-2. `文档/技术决策Q&A.md`
+2. `文档/功能开发顺序.md`
+3. `文档/技术决策Q&A.md`
