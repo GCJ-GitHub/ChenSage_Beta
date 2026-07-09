@@ -32,6 +32,8 @@ Beta 阶段优先解决五件事：
 - 工具协议：把搜索、arXiv、文件解析、导出、记忆检索、模型调用等能力统一成可治理工具。
 - Agent 可观测性：看清每一步 plan、act、observe、evaluate、revise 的过程、成本和质量。
 
+Beta1.0 的范围有意偏向“首次平台底座验证”。它不是只做一个窄功能 demo，而是用一条端到端 Agent 任务链路验证前端、网关、任务队列、Agent 运行、模型调用、工具、记忆、评估和观测这些核心边界是否能协同工作。实现时可以先把部分能力放在同一个代码服务或模块内，但目录、接口和数据所有权要按平台边界设计。
+
 ## 目标架构
 
 ```text
@@ -157,6 +159,34 @@ agent-svc
 
 等边界稳定后，再把重型 Agent 独立拆服务。
 
+## Beta1.0 首次平台验证范围
+
+第一版要优先跑通这条链路：
+
+```text
+Browser / Next.js
+  -> gateway
+  -> task-svc 创建 task
+  -> RabbitMQ
+  -> worker
+  -> agent-svc 内部 orchestrator + harness + loop-engine
+  -> model-svc
+  -> tool-registry
+  -> living-memory-svc
+  -> eval-svc
+  -> task-svc 持久化状态和结果
+  -> 前端展示进度、审批和最终输出
+```
+
+关键边界：
+
+- `task-svc` 是任务状态唯一事实源，负责 queued、running、waiting_approval、succeeded、failed、cancelled、expired 等状态。
+- `agent-svc` 负责 Agent 编排和循环决策，不直接成为任务状态数据库。
+- `model-svc` 是唯一模型调用入口，模型调用不作为普通工具暴露给 Agent。
+- `tool-registry` 负责非模型工具的注册、权限、schema 和审计。
+- 活记忆第一版采用“自动临时记忆 + 用户确认长期记忆”的策略，避免错误记忆静默长期生效。
+- PostgreSQL 采用单实例多 schema，但每个服务独立账号、独立 migration、禁止跨 schema join。
+
 ## 技术选型
 
 | 层级 | 选型 |
@@ -175,11 +205,38 @@ agent-svc
 | 本地开发 | Docker Compose |
 | 部署验证 | kind, Kubernetes, Helm / Kustomize |
 
+## 项目目录
+
+```text
+apps/
+  web/                         Next.js 前端应用
+services/
+  gateway/                     统一 API 入口、认证上下文、SSE / WebSocket 代理
+  agent-svc/                   Agent 编排、harness、loop-engine、context-engine
+  task-svc/                    任务状态唯一事实源
+  model-svc/                   模型 Provider、Key、路由、限流和成本统计
+  tool-registry/               非模型工具注册、schema、权限和审计
+  living-memory-svc/           活记忆写入、检索、确认、冲突和过期
+  eval-svc/                    输出质量评估和 eval report
+  policy-svc/                  权限、审批、预算和安全策略
+  file-svc/                    文件元数据、解析任务和 MinIO 对象索引
+workers/
+  agent-worker/                RabbitMQ / Celery 长任务执行器
+packages/
+  shared/                      DTO、client、事件契约、错误码和通用工具
+infra/
+  docker/                      Docker Compose、本地依赖和开发配置
+  kubernetes/                  kind / K8s / Helm / Kustomize 验证配置
+scripts/                       本地开发、校验和运维脚本
+tests/                         跨服务契约、集成和端到端测试
+文档/                          架构、技术决策和项目说明
+```
+
 ## 推荐落地路线
 
 1. 架构文档重写：把项目定位改为 Agent-native 个人 AI 操作系统。
 2. 基础底座：落 PostgreSQL、pgvector、RabbitMQ、Redis、MinIO、Docker Compose。
-3. Agent MVP：实现 `agent-orchestrator`、`agent-harness`、`loop-engine`、`model-svc`、`task-svc`、`worker`。
+3. Agent MVP：实现 `agent-svc` 内部的 `agent-orchestrator`、`agent-harness`、`loop-engine`，以及 `model-svc`、`task-svc`、`worker`。
 4. 跑通第一条链路：用户输入目标 -> planner -> research-agent -> content-agent -> critic-agent -> 输出结果。
 5. 活记忆：实现 `living-memory-svc`，支持写入、检索、用户确认、冲突检测、过期降权。
 6. 工具系统：实现 `tool-registry`，把 arXiv、网页搜索、文件解析、导出都工具化。
@@ -192,4 +249,3 @@ agent-svc
 
 1. `文档/架构设计与技术选型.md`
 2. `文档/技术决策Q&A.md`
-
