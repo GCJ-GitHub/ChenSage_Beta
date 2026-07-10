@@ -14,3 +14,9 @@ RabbitMQ / Celery 长任务执行器。
 - 不直接写 task 数据表。
 - 不绕过 agent-svc 执行 Agent 业务逻辑。
 - 不直接读取模型 Key。
+
+阶段 0 启动方式：
+
+```bash
+make run-agent-worker
+```

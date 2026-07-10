@@ -20,6 +20,29 @@ ChenSage AgentOS 是 ChenSage_Beta 的新版架构方向。项目定位从原来
 
 原有的 PostgreSQL、RabbitMQ、Redis、MinIO、Docker Compose、OpenTelemetry 等工程能力不会丢，它们会成为 AgentOS 的可靠底座。
 
+## 本地开发快速开始
+
+阶段 0 先保证基础依赖和服务边界能跑通：
+
+```bash
+make setup-env
+make infra-up
+make check-stage0
+make compile-services
+```
+
+常用本地服务入口：
+
+| 命令 | 说明 |
+|------|------|
+| `make run-gateway` | 启动统一 API 入口，默认 `http://localhost:8000` |
+| `make run-task-svc` | 启动任务服务，默认 `http://localhost:8011` |
+| `make run-model-svc` | 启动模型配置服务，默认 `http://localhost:8012` |
+| `make run-agent-svc` | 启动 Agent 编排服务，默认 `http://localhost:8013` |
+| `make run-agent-worker` | 启动阶段 0 worker 占位入口 |
+
+真实 `.env` 不进入 Git。大模型 API Key 只通过 `model-svc` 的配置边界读取。
+
 ## 核心定位
 
 ChenSage AgentOS 面向个人知识工作者，目标是把 AI 从“单次问答工具”升级为“能规划、执行、协作、记忆和复盘的个人任务系统”。

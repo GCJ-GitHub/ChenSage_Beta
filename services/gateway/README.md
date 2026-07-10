@@ -15,3 +15,15 @@
 - 不保存业务数据。
 - 不直接调用模型 Provider。
 - 不绕过 task-svc 修改任务状态。
+
+阶段 0 启动方式：
+
+```bash
+make run-gateway
+```
+
+健康检查：
+
+```bash
+curl http://localhost:8000/health
+```

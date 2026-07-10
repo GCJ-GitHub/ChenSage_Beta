@@ -4,6 +4,18 @@ app:
   public_base_url: http://localhost:3000
   api_base_url: http://localhost:8000
 
+services:
+  gateway:
+    base_url: http://localhost:8000
+  task_svc:
+    base_url: http://localhost:8011
+  model_svc:
+    base_url: http://localhost:8012
+  agent_svc:
+    base_url: http://localhost:8013
+  worker:
+    queue: agent.tasks
+
 task:
   default_timeout_seconds: 600
   max_retry_count: 2
