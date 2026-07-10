@@ -236,8 +236,14 @@ Browser / Next.js
 ## 项目目录
 
 ```text
+.github/
+  workflows/                   CI 检查入口
 apps/
   web/                         Next.js 前端应用
+config/
+  app/                         应用级非敏感配置
+  models/                      模型 Provider 示例配置，不放真实 API Key
+  prompts/                     内容、面试、研究、arXiv 等提示词模板
 services/
   gateway/                     统一 API 入口、认证上下文、SSE / WebSocket 代理
   agent-svc/                   Agent 编排、harness、loop-engine、context-engine
@@ -256,9 +262,49 @@ infra/
   docker/                      Docker Compose、本地依赖和开发配置
   kubernetes/                  kind / K8s / Helm / Kustomize 验证配置
 scripts/                       本地开发、校验和运维脚本
-tests/                         跨服务契约、集成和端到端测试
+tests/
+  contract/                    API、事件、tool schema 契约测试
+  integration/                 PostgreSQL、RabbitMQ、Redis、MinIO 集成测试
+  e2e/                         端到端用户流程测试
+  fixtures/                    测试夹具
 文档/                          架构、技术决策和项目说明
+pyproject.toml                 Python 工程、lint、type check、test 配置
 ```
+
+核心后端服务采用一致的内部结构：
+
+```text
+services/<service-name>/
+  app/
+    api/                       HTTP API
+    core/                      配置、常量、运行时策略
+    db/                        数据库会话和连接
+    models/                    本服务拥有的 ORM Model
+    schemas/                   本服务拥有的 Pydantic Schema
+    services/                  业务服务
+  migrations/                  本服务独立 Alembic migration
+  tests/                       本服务测试
+```
+
+## 配置体系
+
+项目采用“示例配置可提交，真实密钥不入库”的配置策略：
+
+```text
+.env.example                   根级本地环境变量示例
+config/app/*.yaml              应用级非敏感配置
+config/models/*.example.yaml   模型 Provider 示例配置
+config/prompts/                可版本化提示词模板
+infra/docker/.env.example      本地 Compose 依赖配置示例
+services/*/config/             服务自己的配置读取边界
+```
+
+关键规则：
+
+- 真实 `.env`、生产配置和 Secret 不提交到 GitHub。
+- `model-svc` 是唯一读取大模型 API Key 的服务。
+- OpenAI-compatible API 的 base URL、API Key、默认模型通过环境变量或后续模型设置页交给 `model-svc` 管理。
+- 提示词模板先放在 `config/prompts/`，由 `agent-svc` 加载；后续复杂后再考虑拆 `prompt-svc`。
 
 ## 推荐落地路线
 

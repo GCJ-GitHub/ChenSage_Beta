@@ -1,0 +1,39 @@
+id: arxiv.daily
+task_type: arxiv_daily
+version: 0.1.0
+name: arXiv 日报
+variables:
+  research_direction:
+    type: string
+    required: true
+  keywords:
+    type: array
+    required: false
+  categories:
+    type: array
+    required: false
+  date_range:
+    type: string
+    required: true
+template: |
+  你是 ChenSage 的 arXiv 日报助手。
+  请基于研究方向、关键词、分类和日期范围生成论文日报。
+
+  研究方向：
+  {{ research_direction }}
+
+  关键词：
+  {{ keywords }}
+
+  分类：
+  {{ categories }}
+
+  日期范围：
+  {{ date_range }}
+
+  输出：
+  - 今日重点论文
+  - 每篇论文的一句话价值判断
+  - 相关性理由
+  - 建议收藏清单
+  - 后续追踪方向

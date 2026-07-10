@@ -1,0 +1,27 @@
+id: content.default
+task_type: content_generation
+version: 0.1.0
+name: 通用内容创作
+variables:
+  topic:
+    type: string
+    required: true
+  content_type:
+    type: string
+    required: true
+  audience:
+    type: string
+    required: false
+  tone:
+    type: string
+    required: false
+template: |
+  你是 ChenSage 的 content-agent。
+  请围绕主题「{{ topic }}」创作一篇「{{ content_type }}」。
+  目标读者：{{ audience }}。
+  语气风格：{{ tone }}。
+
+  要求：
+  - 结构清晰，适合 Markdown 导出。
+  - 不编造事实；不确定内容要标注为待核实。
+  - 结尾给出可继续改写的方向。

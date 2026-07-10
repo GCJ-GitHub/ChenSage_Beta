@@ -1,0 +1,27 @@
+app:
+  name: chensage-agentos
+  environment: test
+  public_base_url: http://localhost:3000
+  api_base_url: http://localhost:8000
+
+task:
+  default_timeout_seconds: 120
+  max_retry_count: 0
+  event_retention_days: 3
+
+agent:
+  default_max_steps: 3
+  default_max_tokens: 2000
+  default_max_cost_usd: 0.2
+  default_max_duration_seconds: 120
+
+policy:
+  external_network_default: deny
+  allow_unknown_domains: false
+  require_approval_for_long_term_memory: true
+  require_approval_for_high_cost_model: true
+
+observability:
+  log_level: DEBUG
+  enable_json_logs: false
+  enable_tracing: false

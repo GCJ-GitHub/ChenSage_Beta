@@ -1,0 +1,31 @@
+# Example model provider registry. Do not put real API keys in this file.
+
+default_provider: openai_compatible
+default_model: gpt-4.1
+
+providers:
+  openai_compatible:
+    type: openai_compatible
+    base_url_env: OPENAI_COMPATIBLE_BASE_URL
+    api_key_env: OPENAI_COMPATIBLE_API_KEY
+    default_model_env: DEFAULT_MODEL
+    timeout_seconds: 60
+    max_retries: 2
+    models:
+      - id: gpt-4.1
+        purpose: default
+        max_input_tokens: 128000
+      - id: gpt-4.1-mini
+        purpose: low_cost
+        max_input_tokens: 128000
+
+  local_stub:
+    type: stub
+    enabled: true
+    default_model: stub-model
+    purpose: tests_and_static_demo
+
+budget:
+  daily_cost_limit_usd: 20.0
+  per_task_default_limit_usd: 4.0
+  high_cost_approval_threshold_usd: 5.0

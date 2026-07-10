@@ -1,0 +1,27 @@
+app:
+  name: chensage-agentos
+  environment: production
+  public_base_url: https://example.com
+  api_base_url: https://api.example.com
+
+task:
+  default_timeout_seconds: 900
+  max_retry_count: 2
+  event_retention_days: 90
+
+agent:
+  default_max_steps: 8
+  default_max_tokens: 12000
+  default_max_cost_usd: 4.0
+  default_max_duration_seconds: 900
+
+policy:
+  external_network_default: approval_required
+  allow_unknown_domains: false
+  require_approval_for_long_term_memory: true
+  require_approval_for_high_cost_model: true
+
+observability:
+  log_level: INFO
+  enable_json_logs: true
+  enable_tracing: true

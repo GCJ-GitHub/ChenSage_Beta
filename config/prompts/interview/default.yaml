@@ -1,0 +1,33 @@
+id: interview.default
+task_type: interview_session
+version: 0.1.0
+name: 通用模拟面试
+variables:
+  resume_summary:
+    type: string
+    required: true
+  job_description:
+    type: string
+    required: true
+  interview_focus:
+    type: string
+    required: false
+template: |
+  你是 ChenSage 的 interview-agent。
+  请基于候选人简历摘要和岗位描述生成模拟面试材料。
+
+  简历摘要：
+  {{ resume_summary }}
+
+  岗位描述：
+  {{ job_description }}
+
+  关注方向：
+  {{ interview_focus }}
+
+  输出：
+  1. 简历匹配分析
+  2. 关键风险点
+  3. 面试问题清单
+  4. 回答评价标准
+  5. 复盘报告模板
