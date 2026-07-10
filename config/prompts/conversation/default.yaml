@@ -1,0 +1,27 @@
+id: conversation.default
+task_type: conversation_routing
+version: 0.1.0
+name: 对话式任务理解
+variables:
+  user_message:
+    type: string
+    required: true
+  available_task_types:
+    type: array
+    required: true
+template: |
+  你是 ChenSage 的 conversation-agent。
+  请理解用户输入，判断任务类型，必要时提出澄清问题，并给出需要检索的知识范围。
+
+  用户输入：
+  {{ user_message }}
+
+  可用任务类型：
+  {{ available_task_types }}
+
+  输出：
+  - task_type
+  - clarified_goal
+  - missing_information
+  - required_knowledge_scopes
+  - suggested_agent

@@ -4,7 +4,7 @@
 
 ChenSage AgentOS 是 ChenSage_Beta 的新版架构方向。项目定位从原来的“本地云原生微服务平台”升级为“Agent-native 个人 AI 操作系统”。
 
-它不再只是内容生成、信息搜集、面试训练、arXiv 日报等功能集合，而是一个面向个人知识工作者的 Agent 平台：
+它不再只是内容生成、信息搜集、面试训练、arXiv 日报等功能集合，而是一个面向个人知识工作者的 Agent 平台和对话式内容生产中枢：
 
 ```text
 用户提出目标
@@ -14,8 +14,8 @@ ChenSage AgentOS 是 ChenSage_Beta 的新版架构方向。项目定位从原来
   -> 调用工具和模型
   -> 读写活记忆
   -> 形成结果
-  -> 自动评估和复盘
-  -> 把经验沉淀回记忆
+  -> 自动评估、解释理由和给出修改建议
+  -> 把用户反馈、评价理由和生产经验沉淀回知识库 / 活记忆 / 提示词模板
 ```
 
 原有的 PostgreSQL、RabbitMQ、Redis、MinIO、Docker Compose、OpenTelemetry 等工程能力不会丢，它们会成为 AgentOS 的可靠底座。
@@ -31,6 +31,8 @@ Beta 阶段优先解决五件事：
 - 活记忆：系统能持续沉淀用户偏好、任务经验、工作流程和复盘结论。
 - 工具协议：把搜索、arXiv、文件解析、导出、记忆检索、模型调用等能力统一成可治理工具。
 - Agent 可观测性：看清每一步 plan、act、observe、evaluate、revise 的过程、成本和质量。
+- 内容评价与学习反馈：对生成内容给出评分、理由、问题定位、修改建议，并把高价值经验沉淀到知识库、记忆和提示词模板。
+- 对话式生产窗口：用户可以通过统一对话入口描述任务，系统自动识别任务类型、检索相关知识库、选择 Agent 并生成内容。
 
 Beta1.0 的范围有意偏向“首次平台底座验证”。它不是只做一个窄功能 demo，而是用一条端到端 Agent 任务链路验证前端、网关、任务队列、Agent 运行、模型调用、工具、记忆、评估和观测这些核心边界是否能协同工作。实现时可以先把部分能力放在同一个代码服务或模块内，但目录、接口和数据所有权要按平台边界设计。
 
@@ -48,6 +50,9 @@ Beta1.0 不是另起一个脱离原 MVP 的平台项目，而是把 MVP 已验�
 | 提示词模板 | 支持按任务类型维护模板，并在信息搜集、arXiv 日报、内容创作等功能中复用 |
 | 文件管理 | 支持上传并解析 PDF、DOCX、TXT、MD |
 | 历史任务与导出 | 支持统一查看任务、重试、导出 Markdown |
+| 对话式生产窗口 | 支持在统一对话窗口中理解任务、调取知识库、选择模板和生成内容 |
+| 知识库沉淀 | 支持沉淀历史内容、资料来源、高质量案例、用户偏好和评价经验 |
+| 内容评价与反馈 | 支持评分、评分理由、问题定位、修改建议、版本对比和经验沉淀 |
 
 这些功能在 Beta 架构中的归属：
 
@@ -61,6 +66,35 @@ Beta1.0 不是另起一个脱离原 MVP 的平台项目，而是把 MVP 已验�
 | 提示词模板 | `agent-svc` 内 prompt registry，后续可拆 `prompt-svc` |
 | 文件管理 | `file-svc` + `tool-registry` 文件解析工具 |
 | 历史任务与导出 | `task-svc` + export tools + `file-svc` |
+| 对话式生产窗口 | `conversation-agent` + `agent-orchestrator` + `context-engine` |
+| 知识库沉淀 | `knowledge-base-svc` + `living-memory-svc` + pgvector |
+| 内容评价与反馈 | `eval-svc` + `memory-agent` + prompt optimizer |
+
+## 对话式内容生产中枢
+
+Beta1.0 的产品入口不只是功能按钮，也要逐步形成一个统一的内容生产工作台：
+
+```text
+用户在对话窗口描述目标
+  -> conversation-agent 理解任务和澄清需求
+  -> context-engine 判断需要哪些知识库和历史经验
+  -> knowledge-base-svc 检索相关资料、历史内容、用户偏好、高分案例
+  -> planner-agent 选择 content / research / interview / arXiv 等 Agent
+  -> Agent 生成内容
+  -> eval-svc 输出评分、理由、问题定位、修改建议
+  -> 用户选择采纳、重写、局部修改或确认沉淀经验
+  -> memory-agent / prompt optimizer 把稳定经验写入知识库、活记忆或模板建议
+```
+
+内容评价不是简单打分，而是结构化反馈闭环：
+
+| 反馈项 | 含义 |
+|------|------|
+| 评分 | 对事实性、结构、风格、完整度、平台适配度、可用性等维度量化 |
+| 理由 | 解释每个分数为什么这样给 |
+| 问题定位 | 指出具体段落、句子、结构或引用上的问题 |
+| 修改建议 | 给出可直接用于下一轮生成或人工修改的建议 |
+| 学习沉淀 | 把高价值偏好、写法、禁用表达、结构经验沉淀为知识或模板建议 |
 
 ## 目标架构
 
@@ -73,6 +107,7 @@ gateway
   v
 agent-orchestrator
   |
+  +--> conversation-agent
   +--> planner-agent
   +--> research-agent
   +--> content-agent
@@ -87,14 +122,17 @@ agent-orchestrator
   +--> loop-engine
   +--> context-engine
   +--> tool-registry
+  +--> knowledge-base-svc
   +--> living-memory-svc
   +--> eval-svc
+  +--> prompt-optimizer
   +--> policy-svc
   +--> task-svc
 
 task-svc -> RabbitMQ -> worker
 worker -> model-svc
 worker -> tool-registry
+worker -> knowledge-base-svc
 file-svc -> MinIO
 
 services -> PostgreSQL + pgvector
@@ -145,13 +183,21 @@ plan -> act -> observe -> evaluate -> revise -> stop
 - reflective memory：Agent 复盘总结。
 - governed memory：用户确认、冻结、删除的记忆。
 
+### Knowledge Base
+
+`knowledge-base-svc` 负责沉淀历史内容、资料来源、高质量案例、用户偏好、评分理由、问题定位和修改建议。它让系统通过检索、上下文注入、模板优化和用户确认来学习，而不是直接训练模型参数。
+
+### Conversation Workbench
+
+对话式生产窗口是统一入口。用户可以直接描述目标，系统自动理解任务类型、调取知识库、选择模板和 Agent，并在生成后展示评分、理由、问题位置、修改建议和版本历史。
+
 ### Tool Registry
 
 `tool-registry` 是工具注册中心，统一管理内部工具和 MCP-style 工具。每个工具都要有权限、输入 schema、输出 schema、审计日志和调用成本。
 
 ### Eval Service
 
-`eval-svc` 负责评估 Agent 输出质量，例如事实性、格式、引用来源、完整性、风格一致性，以及是否满足用户目标。
+`eval-svc` 负责生成内容评价与学习反馈报告，例如事实性、格式、引用来源、完整性、风格一致性、是否满足用户目标、分维度评分、评分理由、问题定位、修改建议和可沉淀经验。
 
 ### Policy Service
 
@@ -163,12 +209,13 @@ plan -> act -> observe -> evaluate -> revise -> stop
 
 | Agent | 职责 |
 |------|------|
+| `conversation-agent` | 对话式任务理解、澄清问题、任务路由、知识库选择 |
 | `planner-agent` | 任务拆解、步骤规划、选择其他 Agent |
 | `research-agent` | 网页搜索、arXiv、资料筛选、信息归纳 |
 | `content-agent` | 文章、短视频脚本、小红书、知乎、歌词、报告创作 |
 | `interview-agent` | 简历分析、问题生成、回答评价、复盘建议 |
 | `critic-agent` | 审稿、挑错、事实核查、质量评估 |
-| `memory-agent` | 整理任务经验，决定哪些内容进入活记忆 |
+| `memory-agent` | 整理任务经验和评价反馈，决定哪些内容进入活记忆或知识库 |
 | `file-agent` | 文件解析、摘要、导出、格式转换 |
 
 第一版不建议每个 Agent 都独立部署成微服务。更稳的方式是先放在同一个 `agent-svc` 中：
@@ -176,6 +223,7 @@ plan -> act -> observe -> evaluate -> revise -> stop
 ```text
 agent-svc
   agents/
+    conversation_agent.py
     planner_agent.py
     research_agent.py
     content_agent.py
@@ -250,8 +298,9 @@ services/
   task-svc/                    任务状态唯一事实源
   model-svc/                   模型 Provider、Key、路由、限流和成本统计
   tool-registry/               非模型工具注册、schema、权限和审计
+  knowledge-base-svc/          历史内容、资料来源、高质量案例和评价经验
   living-memory-svc/           活记忆写入、检索、确认、冲突和过期
-  eval-svc/                    输出质量评估和 eval report
+  eval-svc/                    评分、理由、问题定位、修改建议和 eval report
   policy-svc/                  权限、审批、预算和安全策略
   file-svc/                    文件元数据、解析任务和 MinIO 对象索引
 workers/
@@ -286,6 +335,14 @@ services/<service-name>/
   tests/                       本服务测试
 ```
 
+`agent-svc` 额外包含：
+
+```text
+services/agent-svc/app/
+  conversation/                对话式任务理解、澄清问题、任务路由
+  prompt_optimizer/            基于评价反馈的提示词优化建议
+```
+
 ## 配置体系
 
 项目采用“示例配置可提交，真实密钥不入库”的配置策略：
@@ -311,11 +368,12 @@ services/*/config/             服务自己的配置读取边界
 1. 架构文档重写：把项目定位改为 Agent-native 个人 AI 操作系统。
 2. 基础底座：落 PostgreSQL、pgvector、RabbitMQ、Redis、MinIO、Docker Compose。
 3. Agent MVP：实现 `agent-svc` 内部的 `agent-orchestrator`、`agent-harness`、`loop-engine`，以及 `model-svc`、`task-svc`、`worker`。
-4. 跑通第一条链路：用户输入目标 -> planner -> research-agent -> content-agent -> critic-agent -> 输出结果。
-5. 活记忆：实现 `living-memory-svc`，支持写入、检索、用户确认、冲突检测、过期降权。
-6. 工具系统：实现 `tool-registry`，把 arXiv、网页搜索、文件解析、导出都工具化。
-7. 观测和评估：补齐 agent trace、tool call trace、token/cost、loop step、eval report。
-8. Kubernetes：Compose 稳定后，再迁移到 kind / K8s 验证部署能力。
+4. 跑通第一条链路：用户输入目标 -> conversation-agent -> knowledge retrieval -> content-agent -> eval feedback -> 版本结果。
+5. 知识库和活记忆：实现 `knowledge-base-svc`、`living-memory-svc`，支持历史内容、资料来源、高质量案例、用户确认、冲突检测和过期降权。
+6. 内容评价与学习反馈：实现评分、评分理由、问题定位、修改建议、learning candidates 和提示词优化建议。
+7. 工具系统：实现 `tool-registry`，把 arXiv、网页搜索、文件解析、导出都工具化。
+8. 观测和评估：补齐 agent trace、tool call trace、knowledge retrieval trace、token/cost、loop step、eval report。
+9. Kubernetes：Compose 稳定后，再迁移到 kind / K8s 验证部署能力。
 
 ## 文档索引
 

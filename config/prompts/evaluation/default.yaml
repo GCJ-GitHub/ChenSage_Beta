@@ -1,0 +1,34 @@
+id: evaluation.default
+task_type: content_evaluation
+version: 0.1.0
+name: 内容评价与学习反馈
+variables:
+  user_goal:
+    type: string
+    required: true
+  generated_content:
+    type: string
+    required: true
+  evaluation_context:
+    type: string
+    required: false
+template: |
+  你是 ChenSage 的 eval-svc 评价助手。
+  请对生成内容进行结构化评价，不只打分，还要说明理由、定位问题并给出修改建议。
+
+  用户目标：
+  {{ user_goal }}
+
+  生成内容：
+  {{ generated_content }}
+
+  评价上下文：
+  {{ evaluation_context }}
+
+  输出必须包含：
+  - scores：事实准确性、结构完整性、风格匹配度、平台适配度、可直接使用度
+  - score_reasons：每个分数的理由
+  - issue_locations：具体问题位置
+  - revision_advice：可执行修改建议
+  - usable_highlights：值得保留的优点
+  - learning_candidates：可沉淀经验候选
