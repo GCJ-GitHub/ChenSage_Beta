@@ -9,7 +9,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -85,7 +84,9 @@ def check_env_examples() -> list[str]:
         content = (ROOT / relative_path).read_text(encoding="utf-8")
         for secret_marker in FORBIDDEN_SECRET_VALUES:
             if secret_marker in content:
-                errors.append(f"{relative_path} appears to contain a real secret marker: {secret_marker}")
+                errors.append(
+                    f"{relative_path} appears to contain a real secret marker: {secret_marker}"
+                )
     if not errors:
         ok("env examples do not contain obvious real secret markers")
     return errors

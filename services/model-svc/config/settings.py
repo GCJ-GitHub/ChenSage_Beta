@@ -20,7 +20,7 @@ class ModelServiceSettings:
     max_retries: int = 2
 
     @classmethod
-    def from_env(cls) -> "ModelServiceSettings":
+    def from_env(cls) -> ModelServiceSettings:
         return cls(
             provider_base_url=os.getenv("OPENAI_COMPATIBLE_BASE_URL", "https://api.openai.com/v1"),
             provider_api_key=os.getenv("OPENAI_COMPATIBLE_API_KEY", ""),
