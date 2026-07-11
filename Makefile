@@ -2,13 +2,14 @@ PYTHON ?= python3
 DOCKER_COMPOSE ?= docker compose
 DOCKER_COMPOSE_FILE ?= infra/docker/docker-compose.yml
 
-.PHONY: help setup-env setup-python infra-up infra-down infra-ps check-stage0 compile-services run-gateway run-task-svc run-model-svc run-agent-svc run-agent-worker
+.PHONY: help setup-env setup-python infra-up infra-down infra-ps migrate-task-svc check-stage0 compile-services run-gateway run-task-svc run-model-svc run-agent-svc run-agent-worker
 
 help:
 	@echo "ChenSage AgentOS development commands"
 	@echo "  make setup-env        Copy local env examples if missing"
 	@echo "  make setup-python     Install Python runtime and dev dependencies"
 	@echo "  make infra-up         Start PostgreSQL, RabbitMQ, Redis and MinIO"
+	@echo "  make migrate-task-svc Run task-svc Alembic migrations"
 	@echo "  make infra-down       Stop local infrastructure"
 	@echo "  make infra-ps         Show local infrastructure status"
 	@echo "  make check-stage0     Verify phase 0 project skeleton"
@@ -29,6 +30,9 @@ infra-down:
 
 infra-ps:
 	$(DOCKER_COMPOSE) --env-file infra/docker/.env -f $(DOCKER_COMPOSE_FILE) ps
+
+migrate-task-svc:
+	$(PYTHON) -m alembic -c services/task-svc/alembic.ini upgrade head
 
 check-stage0:
 	$(PYTHON) scripts/check_stage0.py

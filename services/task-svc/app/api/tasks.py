@@ -20,6 +20,13 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 def create_task(request: TaskCreateRequest) -> TaskResponse:
     task = task_store.create(request)
     try:
+        task = task_store.add_event(
+            task.id,
+            TaskEventCreate(
+                event_type="task.queued",
+                message="Task queued for RabbitMQ dispatch.",
+            ),
+        )
         task_queue_publisher.publish(
             {
                 "task_id": task.id,
@@ -29,13 +36,6 @@ def create_task(request: TaskCreateRequest) -> TaskResponse:
                 "template": task.template,
                 "output_format": task.output_format,
             }
-        )
-        task_store.add_event(
-            task.id,
-            TaskEventCreate(
-                event_type="task.queued",
-                message="Task published to RabbitMQ.",
-            ),
         )
     except Exception as exc:
         task = task_store.update(
@@ -92,4 +92,3 @@ def cancel_task(task_id: str) -> TaskResponse:
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     return task.to_response()
-

@@ -28,6 +28,7 @@ ChenSage AgentOS 是 ChenSage_Beta 的新版架构方向。项目定位从原来
 make setup-env
 make setup-python
 make infra-up
+make migrate-task-svc
 make check-stage0
 make compile-services
 ```
@@ -40,6 +41,7 @@ Copy-Item infra/docker/.env.example infra/docker/.env -ErrorAction SilentlyConti
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 docker compose --env-file infra/docker/.env -f infra/docker/docker-compose.yml up -d
+.\.venv\Scripts\python.exe -m alembic -c services/task-svc/alembic.ini upgrade head
 .\.venv\Scripts\python.exe scripts/check_stage0.py
 .\.venv\Scripts\python.exe -m compileall services workers packages scripts
 ```
