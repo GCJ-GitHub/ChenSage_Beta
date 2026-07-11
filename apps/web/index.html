@@ -47,30 +47,30 @@
           </div>
           <div class="topbar-actions">
             <button class="icon-button" type="button" title="查看任务事件">≡</button>
-            <button class="primary-button" type="button">新建任务</button>
+            <button class="primary-button" type="button" id="new-task">新建任务</button>
           </div>
         </header>
 
         <section class="status-grid" aria-label="系统状态">
           <article class="metric-card">
             <p class="metric-label">运行中任务</p>
-            <strong>3</strong>
-            <span>1 个等待模型响应</span>
+            <strong id="metric-running">0</strong>
+            <span id="metric-running-detail">等待任务创建</span>
           </article>
           <article class="metric-card">
-            <p class="metric-label">默认模型</p>
-            <strong>gpt-4.1</strong>
-            <span>OpenAI-compatible 已连接</span>
+            <p class="metric-label">队列状态</p>
+            <strong id="metric-queued">0</strong>
+            <span>RabbitMQ agent.tasks</span>
           </article>
           <article class="metric-card">
-            <p class="metric-label">今日成本</p>
-            <strong>$1.28</strong>
-            <span>预算使用 18%</span>
+            <p class="metric-label">成功任务</p>
+            <strong id="metric-succeeded">0</strong>
+            <span>worker 已写回结果</span>
           </article>
           <article class="metric-card">
-            <p class="metric-label">待审批</p>
-            <strong>2</strong>
-            <span>外部请求与长期记忆</span>
+            <p class="metric-label">失败任务</p>
+            <strong id="metric-failed">0</strong>
+            <span>可在详情查看事件</span>
           </article>
         </section>
 
@@ -84,7 +84,7 @@
               <span class="status-pill">task-svc</span>
             </div>
 
-            <form class="composer-form">
+            <form class="composer-form" id="task-form">
               <label>
                 <span>任务类型</span>
                 <select id="task-type">
@@ -104,8 +104,9 @@
               <div class="form-row">
                 <label>
                   <span>提示词模板</span>
-                  <select>
+                  <select id="task-template">
                     <option>公众号深度文章</option>
+                    <option>脱口秀 / 单口喜剧稿</option>
                     <option>小红书种草文案</option>
                     <option>论文摘要改写</option>
                     <option>面试复盘报告</option>
@@ -113,7 +114,7 @@
                 </label>
                 <label>
                   <span>输出格式</span>
-                  <select>
+                  <select id="task-output-format">
                     <option>Markdown</option>
                     <option>结构化报告</option>
                     <option>问答清单</option>
@@ -127,8 +128,9 @@
                   <input type="range" min="1" max="10" value="4" />
                   <strong>$4</strong>
                 </div>
-                <button class="primary-button" type="button" id="preview-task">预览任务</button>
+                <button class="primary-button" type="submit" id="create-task">创建任务</button>
               </div>
+              <p class="inline-status" id="composer-status">连接 task-svc 后可创建阶段 1 stub 任务。</p>
             </form>
           </section>
 
@@ -178,7 +180,7 @@
           <article class="feature-card active" data-feature="content">
             <span class="feature-code">CONTENT</span>
             <h3>内容创作</h3>
-            <p>论文、专利、小说、剧本、歌词、小红书、知乎、公众号生成与改写。</p>
+            <p>论文、专利、小说、剧本、歌词、脱口秀稿、小红书、知乎、公众号生成与改写。</p>
           </article>
           <article class="feature-card" data-feature="interview">
             <span class="feature-code">INTERVIEW</span>
@@ -204,7 +206,7 @@
                 <p class="eyebrow">History</p>
                 <h2 id="task-table-title">历史任务</h2>
               </div>
-              <button class="secondary-button" type="button">导出 Markdown</button>
+              <button class="secondary-button" type="button" id="refresh-tasks">刷新</button>
             </div>
 
             <div class="table-wrap">
@@ -218,37 +220,16 @@
                     <th>更新时间</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody id="task-table-body">
                   <tr>
-                    <td>AgentOS 公众号文章初稿</td>
-                    <td>内容创作</td>
-                    <td><span class="state success">成功</span></td>
-                    <td>$0.42</td>
-                    <td>10 分钟前</td>
-                  </tr>
-                  <tr>
-                    <td>候选人后端岗位模拟面试</td>
-                    <td>模拟面试</td>
-                    <td><span class="state running">运行中</span></td>
-                    <td>$0.31</td>
-                    <td>刚刚</td>
-                  </tr>
-                  <tr>
-                    <td>LLM Agent 研究资料汇总</td>
-                    <td>信息搜集</td>
-                    <td><span class="state waiting">待审批</span></td>
-                    <td>$0.18</td>
-                    <td>24 分钟前</td>
-                  </tr>
-                  <tr>
-                    <td>多模态论文日报</td>
-                    <td>arXiv 日报</td>
-                    <td><span class="state failed">失败</span></td>
-                    <td>$0.09</td>
-                    <td>昨天</td>
+                    <td colspan="5">正在连接 task-svc...</td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+            <div class="task-detail" id="task-detail">
+              <p class="panel-label">任务详情</p>
+              <p class="empty-state">选择或创建一个任务后，这里会展示事件和最终结果。</p>
             </div>
           </section>
 

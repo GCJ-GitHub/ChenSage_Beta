@@ -26,9 +26,22 @@ ChenSage AgentOS 是 ChenSage_Beta 的新版架构方向。项目定位从原来
 
 ```bash
 make setup-env
+make setup-python
 make infra-up
 make check-stage0
 make compile-services
+```
+
+如果本机没有 `make`，Windows PowerShell 可直接执行：
+
+```powershell
+Copy-Item .env.example .env -ErrorAction SilentlyContinue
+Copy-Item infra/docker/.env.example infra/docker/.env -ErrorAction SilentlyContinue
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+docker compose --env-file infra/docker/.env -f infra/docker/docker-compose.yml up -d
+.\.venv\Scripts\python.exe scripts/check_stage0.py
+.\.venv\Scripts\python.exe -m compileall services workers packages scripts
 ```
 
 常用本地服务入口：
@@ -65,7 +78,7 @@ Beta1.0 不是另起一个脱离原 MVP 的平台项目，而是把 MVP 已验�
 
 | 产品功能 | Beta1.0 目标 |
 |------|------|
-| 内容创作 | 支持论文、专利、小说、剧本、歌词、小红书、知乎、公众号等内容生成与改写 |
+| 内容创作 | 支持论文、专利、小说、剧本、歌词、脱口秀稿 / 单口喜剧稿、小红书、知乎、公众号等内容生成与改写 |
 | 模拟面试 | 基于简历和岗位描述生成简历分析、面试问题、回答评价和复盘报告 |
 | 信息搜集 | 支持单 URL / PDF / JSON / RSS、批量多任务、站内信息发现与汇总报告 |
 | arXiv 日报 | 支持研究方向管理、关键词 / 分类配置、按日期和篇数拉取论文、收藏论文、按范围生成日报 |
@@ -235,7 +248,7 @@ plan -> act -> observe -> evaluate -> revise -> stop
 | `conversation-agent` | 对话式任务理解、澄清问题、任务路由、知识库选择 |
 | `planner-agent` | 任务拆解、步骤规划、选择其他 Agent |
 | `research-agent` | 网页搜索、arXiv、资料筛选、信息归纳 |
-| `content-agent` | 文章、短视频脚本、小红书、知乎、歌词、报告创作 |
+| `content-agent` | 文章、短视频脚本、脱口秀稿 / 单口喜剧稿、小红书、知乎、歌词、报告创作 |
 | `interview-agent` | 简历分析、问题生成、回答评价、复盘建议 |
 | `critic-agent` | 审稿、挑错、事实核查、质量评估 |
 | `memory-agent` | 整理任务经验和评价反馈，决定哪些内容进入活记忆或知识库 |

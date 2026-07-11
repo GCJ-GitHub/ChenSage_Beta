@@ -65,7 +65,7 @@ services:
       retries: 5
 
   minio-init:
-    image: minio/mc:RELEASE.2024-07-15T19-02-30Z
+    image: minio/mc:latest
     container_name: chensage-minio-init
     depends_on:
       minio:

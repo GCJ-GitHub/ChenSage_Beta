@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "chensage-agentos"
 version = "0.1.0"
@@ -9,6 +13,8 @@ dependencies = [
   "pydantic-settings>=2.4.0",
   "sqlalchemy>=2.0.0",
   "alembic>=1.13.0",
+  "httpx>=0.27.0",
+  "pika>=1.3.2",
   "uvicorn[standard]>=0.30.0",
 ]
 
@@ -18,6 +24,10 @@ dev = [
   "pytest>=8.0.0",
   "ruff>=0.5.0",
 ]
+
+[tool.setuptools.packages.find]
+where = ["packages"]
+include = ["shared*"]
 
 [tool.ruff]
 line-length = 100
