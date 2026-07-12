@@ -2,7 +2,7 @@ PYTHON ?= python3
 DOCKER_COMPOSE ?= docker compose
 DOCKER_COMPOSE_FILE ?= infra/docker/docker-compose.yml
 
-.PHONY: help setup-env setup-python infra-up infra-down infra-ps migrate-task-svc test-task-svc check-stage0 check-stage1 compile-services run-gateway run-task-svc run-model-svc run-agent-svc run-agent-worker dev-task-svc dev-agent-worker dev-stage1
+.PHONY: help setup-env setup-python infra-up infra-down infra-ps migrate-task-svc test-task-svc test-agent-worker check-stage0 check-stage1 compile-services run-gateway run-task-svc run-model-svc run-agent-svc run-agent-worker dev-task-svc dev-agent-worker dev-stage1
 
 help:
 	@echo "ChenSage AgentOS development commands"
@@ -11,6 +11,7 @@ help:
 	@echo "  make infra-up         Start PostgreSQL, RabbitMQ, Redis and MinIO"
 	@echo "  make migrate-task-svc Run task-svc Alembic migrations"
 	@echo "  make test-task-svc    Run task-svc API and PostgreSQL store tests"
+	@echo "  make test-agent-worker Run agent-worker executor tests"
 	@echo "  make check-stage1     Run stage 1 checks"
 	@echo "  make dev-stage1       Start infra, migrate, task-svc and agent-worker"
 	@echo "  make infra-down       Stop local infrastructure"
@@ -40,10 +41,13 @@ migrate-task-svc:
 test-task-svc:
 	$(PYTHON) -m pytest services/task-svc/tests
 
+test-agent-worker:
+	$(PYTHON) -m pytest workers/agent-worker/tests
+
 check-stage0:
 	$(PYTHON) scripts/check_stage0.py
 
-check-stage1: check-stage0 migrate-task-svc test-task-svc compile-services
+check-stage1: check-stage0 migrate-task-svc test-task-svc test-agent-worker compile-services
 
 compile-services:
 	$(PYTHON) -m compileall services workers packages scripts

@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import json
 import os
-import time
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import httpx
 import pika
+
+WORKER_ROOT = Path(__file__).resolve().parents[1]
+if str(WORKER_ROOT) not in sys.path:
+    sys.path.insert(0, str(WORKER_ROOT))
+
+from app.executors import execute_task  # noqa: E402
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,47 +72,27 @@ class TaskClient:
         ).raise_for_status()
 
 
-def build_stub_result(message: dict[str, Any]) -> dict[str, Any]:
-    goal = message.get("goal", "")
-    task_type = message.get("task_type", "unknown")
-    markdown = "\n".join(
-        [
-            "# Phase 1 Stub Result",
-            "",
-            f"- Task type: `{task_type}`",
-            f"- Goal: {goal}",
-            "- Worker: `agent-worker` consumed the RabbitMQ message.",
-            "- Next: replace this stub with agent-svc orchestration in a later phase.",
-        ]
-    )
-    return {
-        "format": message.get("output_format") or "Markdown",
-        "markdown": markdown,
-        "summary": "Phase 1 worker stub completed successfully.",
-    }
-
-
 def handle_message(task_client: TaskClient, message: dict[str, Any]) -> None:
     task_id = str(message["task_id"])
+    result = execute_task(message)
     task_client.update(
         task_id,
         status="running",
         event_type="task.started",
-        message="agent-worker started the phase 1 stub execution.",
+        message=f"agent-worker started {result.executor}.",
     )
-    time.sleep(1)
     task_client.event(
         task_id,
-        "task.worker_stub",
-        "Worker produced a deterministic stub result for the task.",
-        {"worker": "agent-worker"},
+        "task.executor_selected",
+        f"Worker selected {result.executor} for task type {result.task_type}.",
+        {"worker": "agent-worker", "executor": result.executor},
     )
     task_client.update(
         task_id,
         status="succeeded",
-        result=build_stub_result(message),
+        result=result.to_payload(),
         event_type="task.completed",
-        message="agent-worker finished the phase 1 stub execution.",
+        message=f"agent-worker finished {result.executor}.",
     )
 
 

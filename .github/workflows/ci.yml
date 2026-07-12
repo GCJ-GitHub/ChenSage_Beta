@@ -35,7 +35,7 @@ jobs:
       - name: Ruff
         run: ruff check .
       - name: Compile Python
-        run: python -m compileall services packages
+        run: python -m compileall services workers packages scripts
       - name: Task svc migrations
         env:
           POSTGRES_HOST: 127.0.0.1
@@ -50,3 +50,5 @@ jobs:
           POSTGRES_PASSWORD: chensage_dev_password
           POSTGRES_DB: chensage
         run: python -m pytest services/task-svc/tests
+      - name: Agent worker tests
+        run: python -m pytest workers/agent-worker/tests
