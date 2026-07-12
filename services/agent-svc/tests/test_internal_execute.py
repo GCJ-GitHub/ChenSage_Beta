@@ -37,6 +37,9 @@ def test_execute_task_uses_registered_executor(
     assert response.result.task_type == task_type
     assert heading in response.result.markdown
     assert response.events
+    assert response.trace
+    assert response.trace[0].phase == "plan"
+    assert response.trace[-1].phase == "finalize"
 
 
 @pytest.mark.parametrize(
@@ -99,3 +102,5 @@ def test_internal_execute_endpoint(client) -> None:
     assert body["status"] == "succeeded"
     assert body["result"]["executor"] == "research-executor"
     assert body["events"]
+    assert body["trace"][0]["phase"] == "plan"
+    assert body["result"]["duration_ms"] > 0

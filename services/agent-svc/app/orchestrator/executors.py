@@ -4,14 +4,23 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from app.agents import (
+    ARXIV_AGENT,
+    CONTENT_AGENT,
+    FILE_AGENT,
+    INTERVIEW_AGENT,
+    PLANNER_AGENT,
+    RESEARCH_AGENT,
+)
+from app.harness import AgentDefinition, AgentHarness
 from app.schemas.execution import (
     AgentExecutionRequest,
     AgentExecutionResponse,
-    AgentExecutionResult,
     AgentExecutionStep,
 )
 
 TaskExecutor = Callable[[AgentExecutionRequest], AgentExecutionResponse]
+agent_harness = AgentHarness()
 
 
 def execute_task(request: AgentExecutionRequest) -> AgentExecutionResponse:
@@ -39,6 +48,7 @@ def content_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
     )
     return _response(
         request,
+        agent=CONTENT_AGENT,
         executor="content-executor",
         summary="agent-svc produced a deterministic content draft outline.",
         markdown=markdown,
@@ -66,6 +76,7 @@ def research_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
     )
     return _response(
         request,
+        agent=RESEARCH_AGENT,
         executor="research-executor",
         summary="agent-svc produced a deterministic research plan.",
         markdown=markdown,
@@ -90,6 +101,7 @@ def arxiv_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
     )
     return _response(
         request,
+        agent=ARXIV_AGENT,
         executor="arxiv-executor",
         summary="agent-svc produced a deterministic arXiv daily brief outline.",
         markdown=markdown,
@@ -114,6 +126,7 @@ def interview_executor(request: AgentExecutionRequest) -> AgentExecutionResponse
     )
     return _response(
         request,
+        agent=INTERVIEW_AGENT,
         executor="interview-executor",
         summary="agent-svc produced a deterministic interview prep outline.",
         markdown=markdown,
@@ -138,6 +151,7 @@ def file_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
     )
     return _response(
         request,
+        agent=FILE_AGENT,
         executor="file-executor",
         summary="agent-svc produced a deterministic file analysis outline.",
         markdown=markdown,
@@ -160,6 +174,7 @@ def generic_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
     )
     return _response(
         request,
+        agent=PLANNER_AGENT,
         executor="generic-executor",
         summary="agent-svc completed the task with the generic deterministic executor.",
         markdown=markdown,
@@ -190,25 +205,19 @@ EXECUTOR_REGISTRY: dict[str, TaskExecutor] = {
 def _response(
     request: AgentExecutionRequest,
     *,
+    agent: AgentDefinition,
     executor: str,
     summary: str,
     markdown: str,
     steps: list[AgentExecutionStep],
 ) -> AgentExecutionResponse:
-    result = AgentExecutionResult(
-        format=request.output_format or "Markdown",
-        markdown=markdown,
+    return agent_harness.run(
+        request=request,
+        agent=agent,
+        executor=executor,
         summary=summary,
-        executor=executor,
-        task_type=request.task_type,
-        steps=steps,
-    )
-    return AgentExecutionResponse(
-        task_id=request.task_id,
-        task_type=request.task_type,
-        executor=executor,
-        result=result,
-        events=steps,
+        markdown=markdown,
+        plan=steps,
     )
 
 

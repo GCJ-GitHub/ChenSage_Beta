@@ -19,6 +19,11 @@ class AgentExecutionRequest(BaseModel):
 class AgentExecutionStep(BaseModel):
     name: str
     detail: str
+    phase: Literal["plan", "act", "observe", "finalize"] = "act"
+    agent: str | None = None
+    status: Literal["succeeded", "failed"] = "succeeded"
+    duration_ms: int = Field(default=0, ge=0)
+    data: dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentExecutionResult(BaseModel):
@@ -28,6 +33,8 @@ class AgentExecutionResult(BaseModel):
     executor: str
     task_type: str
     steps: list[AgentExecutionStep]
+    trace: list[AgentExecutionStep]
+    duration_ms: int = Field(default=0, ge=0)
     artifacts: list[dict[str, Any]] = Field(default_factory=list)
 
 
@@ -38,3 +45,4 @@ class AgentExecutionResponse(BaseModel):
     status: Literal["succeeded"] = "succeeded"
     result: AgentExecutionResult
     events: list[AgentExecutionStep]
+    trace: list[AgentExecutionStep]
