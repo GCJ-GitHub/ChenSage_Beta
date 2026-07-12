@@ -16,6 +16,12 @@
 python -m alembic -c services/task-svc/alembic.ini upgrade head
 ```
 
+Run the task-svc API and PostgreSQL store tests:
+
+```bash
+python -m pytest services/task-svc/tests
+```
+
 默认 schema 是 `task_svc`，可通过 `TASK_DATABASE_SCHEMA` 覆盖。
 
 边界：

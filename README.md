@@ -29,6 +29,7 @@ make setup-env
 make setup-python
 make infra-up
 make migrate-task-svc
+make test-task-svc
 make check-stage0
 make compile-services
 ```
@@ -42,9 +43,19 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 docker compose --env-file infra/docker/.env -f infra/docker/docker-compose.yml up -d
 .\.venv\Scripts\python.exe -m alembic -c services/task-svc/alembic.ini upgrade head
+.\.venv\Scripts\python.exe -m pytest services/task-svc/tests
 .\.venv\Scripts\python.exe scripts/check_stage0.py
 .\.venv\Scripts\python.exe -m compileall services workers packages scripts
 ```
+
+Stage 1 local task loop:
+
+```bash
+make dev-stage1
+```
+
+This starts Docker Compose dependencies, runs task-svc migrations, then starts
+task-svc on `http://127.0.0.1:8011` and the `agent-worker` consumer.
 
 常用本地服务入口：
 

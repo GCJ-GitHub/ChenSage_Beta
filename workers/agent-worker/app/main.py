@@ -14,7 +14,7 @@ import pika
 
 @dataclass(frozen=True, slots=True)
 class WorkerSettings:
-    rabbitmq_host: str = os.getenv("RABBITMQ_HOST", "localhost")
+    rabbitmq_host: str = os.getenv("RABBITMQ_HOST", "127.0.0.1")
     rabbitmq_port: int = int(os.getenv("RABBITMQ_PORT", "5672"))
     rabbitmq_user: str = os.getenv("RABBITMQ_USER", "chensage")
     rabbitmq_password: str = os.getenv("RABBITMQ_PASSWORD", "chensage_dev_password")

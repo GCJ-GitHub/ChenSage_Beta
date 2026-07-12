@@ -9,6 +9,20 @@ on:
 jobs:
   python-checks:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: chensage
+          POSTGRES_PASSWORD: chensage_dev_password
+          POSTGRES_DB: chensage
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chensage -d chensage"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,3 +36,17 @@ jobs:
         run: ruff check .
       - name: Compile Python
         run: python -m compileall services packages
+      - name: Task svc migrations
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_USER: chensage
+          POSTGRES_PASSWORD: chensage_dev_password
+          POSTGRES_DB: chensage
+        run: python -m alembic -c services/task-svc/alembic.ini upgrade head
+      - name: Task svc tests
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_USER: chensage
+          POSTGRES_PASSWORD: chensage_dev_password
+          POSTGRES_DB: chensage
+        run: python -m pytest services/task-svc/tests

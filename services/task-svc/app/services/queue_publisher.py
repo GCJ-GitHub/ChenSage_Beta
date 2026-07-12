@@ -12,7 +12,7 @@ import pika
 
 @dataclass(frozen=True, slots=True)
 class QueueSettings:
-    host: str = os.getenv("RABBITMQ_HOST", "localhost")
+    host: str = os.getenv("RABBITMQ_HOST", "127.0.0.1")
     port: int = int(os.getenv("RABBITMQ_PORT", "5672"))
     user: str = os.getenv("RABBITMQ_USER", "chensage")
     password: str = os.getenv("RABBITMQ_PASSWORD", "chensage_dev_password")
@@ -50,4 +50,3 @@ class TaskQueuePublisher:
 
 
 task_queue_publisher = TaskQueuePublisher()
-

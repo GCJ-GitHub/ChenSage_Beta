@@ -2,7 +2,7 @@ PYTHON ?= python3
 DOCKER_COMPOSE ?= docker compose
 DOCKER_COMPOSE_FILE ?= infra/docker/docker-compose.yml
 
-.PHONY: help setup-env setup-python infra-up infra-down infra-ps migrate-task-svc check-stage0 compile-services run-gateway run-task-svc run-model-svc run-agent-svc run-agent-worker
+.PHONY: help setup-env setup-python infra-up infra-down infra-ps migrate-task-svc test-task-svc check-stage0 check-stage1 compile-services run-gateway run-task-svc run-model-svc run-agent-svc run-agent-worker dev-task-svc dev-agent-worker dev-stage1
 
 help:
 	@echo "ChenSage AgentOS development commands"
@@ -10,6 +10,9 @@ help:
 	@echo "  make setup-python     Install Python runtime and dev dependencies"
 	@echo "  make infra-up         Start PostgreSQL, RabbitMQ, Redis and MinIO"
 	@echo "  make migrate-task-svc Run task-svc Alembic migrations"
+	@echo "  make test-task-svc    Run task-svc API and PostgreSQL store tests"
+	@echo "  make check-stage1     Run stage 1 checks"
+	@echo "  make dev-stage1       Start infra, migrate, task-svc and agent-worker"
 	@echo "  make infra-down       Stop local infrastructure"
 	@echo "  make infra-ps         Show local infrastructure status"
 	@echo "  make check-stage0     Verify phase 0 project skeleton"
@@ -34,8 +37,13 @@ infra-ps:
 migrate-task-svc:
 	$(PYTHON) -m alembic -c services/task-svc/alembic.ini upgrade head
 
+test-task-svc:
+	$(PYTHON) -m pytest services/task-svc/tests
+
 check-stage0:
 	$(PYTHON) scripts/check_stage0.py
+
+check-stage1: check-stage0 migrate-task-svc test-task-svc compile-services
 
 compile-services:
 	$(PYTHON) -m compileall services workers packages scripts
@@ -46,6 +54,8 @@ run-gateway:
 run-task-svc:
 	uvicorn app.main:app --app-dir services/task-svc --host 0.0.0.0 --port 8011 --reload
 
+dev-task-svc: run-task-svc
+
 run-model-svc:
 	uvicorn app.main:app --app-dir services/model-svc --host 0.0.0.0 --port 8012 --reload
 
@@ -54,3 +64,8 @@ run-agent-svc:
 
 run-agent-worker:
 	$(PYTHON) workers/agent-worker/app/main.py
+
+dev-agent-worker: run-agent-worker
+
+dev-stage1:
+	$(PYTHON) scripts/dev_stage1.py
