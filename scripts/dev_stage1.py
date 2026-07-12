@@ -1,4 +1,4 @@
-"""Run the phase 1 local development stack."""
+"""Run the phase 1/2 local development stack."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def stop_processes(processes: list[subprocess.Popen]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run the ChenSage phase 1 local stack.")
+    parser = argparse.ArgumentParser(description="Run the ChenSage phase 1/2 local stack.")
     parser.add_argument("--skip-infra", action="store_true", help="Do not start Docker Compose.")
     parser.add_argument(
         "--skip-migrate",
@@ -54,6 +54,7 @@ def main() -> int:
 
     env = os.environ.copy()
     env.setdefault("TASK_SVC_URL", "http://127.0.0.1:8011")
+    env.setdefault("AGENT_SVC_URL", "http://127.0.0.1:8013")
     env.setdefault("PYTHONUNBUFFERED", "1")
 
     if not args.skip_infra:
@@ -104,14 +105,32 @@ def main() -> int:
             env=env,
         ),
         start_process(
+            "agent-svc",
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "app.main:app",
+                "--app-dir",
+                "services/agent-svc",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8013",
+                "--reload",
+            ],
+            env=env,
+        ),
+        start_process(
             "agent-worker",
             [sys.executable, "workers/agent-worker/app/main.py"],
             env=env,
         ),
     ]
 
-    print("\nPhase 1 stack is starting. API: http://127.0.0.1:8011", flush=True)
-    print("Press Ctrl+C to stop task-svc and agent-worker.", flush=True)
+    print("\nPhase 1/2 stack is starting. API: http://127.0.0.1:8011", flush=True)
+    print("agent-svc: http://127.0.0.1:8013", flush=True)
+    print("Press Ctrl+C to stop task-svc, agent-svc and agent-worker.", flush=True)
     try:
         while all(process.poll() is None for process in processes):
             time.sleep(1)

@@ -21,18 +21,9 @@ RabbitMQ / Celery 长任务执行器。
 make run-agent-worker
 ```
 
-Phase 1 now routes RabbitMQ messages through a deterministic executor registry
-before writing results back to task-svc. The registry currently covers:
-
-- `content`, `content_generation`, `content_rewrite`, `essay`, `novel`,
-  `speech_script`, `standup_script`
-- `research`, `research_report`, `information_collection`
-- `arxiv`, `arxiv_daily`
-- `interview`, `mock_interview`
-- `file`, `file_analysis`
-
-Unknown task types fall back to `generic-executor` so new product experiments
-fail safely while a dedicated executor is being added.
+Phase 2 routes RabbitMQ messages to `agent-svc` through `POST /internal/execute`
+before writing results back to task-svc. Executor selection is owned by
+agent-svc; the worker only consumes queue messages and advances task state.
 
 Run worker tests:
 
