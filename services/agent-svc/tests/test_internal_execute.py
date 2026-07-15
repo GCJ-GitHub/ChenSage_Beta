@@ -10,11 +10,11 @@ from app.schemas.execution import AgentExecutionRequest
 @pytest.mark.parametrize(
     ("task_type", "executor_name", "heading"),
     [
-        ("content", "content-executor", "# Content Draft"),
-        ("research", "research-executor", "# Research Brief"),
-        ("arxiv", "arxiv-executor", "# arXiv Daily Brief"),
-        ("interview", "interview-executor", "# Interview Prep"),
-        ("file", "file-executor", "# File Analysis"),
+        ("content", "content-executor", "# content-agent Fake Model Output"),
+        ("research", "research-executor", "# research-agent Fake Model Output"),
+        ("arxiv", "arxiv-executor", "# arxiv-agent Fake Model Output"),
+        ("interview", "interview-executor", "# interview-agent Fake Model Output"),
+        ("file", "file-executor", "# file-agent Fake Model Output"),
     ],
 )
 def test_execute_task_uses_registered_executor(
@@ -40,6 +40,8 @@ def test_execute_task_uses_registered_executor(
     assert response.trace
     assert response.trace[0].phase == "plan"
     assert response.trace[-1].phase == "finalize"
+    assert response.result.provider == "fake-model-svc"
+    assert response.result.usage["total_tokens"] > 0
 
 
 @pytest.mark.parametrize(
@@ -57,7 +59,7 @@ def test_content_aliases_reuse_content_executor(task_type: str) -> None:
 
     assert response.executor == "content-executor"
     assert response.result.task_type == task_type
-    assert "Content Draft" in response.result.markdown
+    assert "content-agent Fake Model Output" in response.result.markdown
 
 
 def test_unknown_task_type_uses_generic_executor() -> None:
@@ -71,7 +73,7 @@ def test_unknown_task_type_uses_generic_executor() -> None:
 
     assert response.executor == "generic-executor"
     assert response.result.task_type == "custom_future_task"
-    assert "Generic Task Result" in response.result.markdown
+    assert "planner-agent Fake Model Output" in response.result.markdown
 
 
 def test_get_executor_returns_generic_fallback() -> None:
@@ -104,3 +106,4 @@ def test_internal_execute_endpoint(client) -> None:
     assert body["events"]
     assert body["trace"][0]["phase"] == "plan"
     assert body["result"]["duration_ms"] > 0
+    assert body["result"]["provider"] == "fake-model-svc"

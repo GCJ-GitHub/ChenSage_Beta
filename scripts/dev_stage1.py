@@ -54,6 +54,7 @@ def main() -> int:
 
     env = os.environ.copy()
     env.setdefault("TASK_SVC_URL", "http://127.0.0.1:8011")
+    env.setdefault("MODEL_SVC_URL", "http://127.0.0.1:8012")
     env.setdefault("AGENT_SVC_URL", "http://127.0.0.1:8013")
     env.setdefault("PYTHONUNBUFFERED", "1")
 
@@ -105,6 +106,23 @@ def main() -> int:
             env=env,
         ),
         start_process(
+            "model-svc",
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "app.main:app",
+                "--app-dir",
+                "services/model-svc",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8012",
+                "--reload",
+            ],
+            env=env,
+        ),
+        start_process(
             "agent-svc",
             [
                 sys.executable,
@@ -129,8 +147,9 @@ def main() -> int:
     ]
 
     print("\nPhase 1/2 stack is starting. API: http://127.0.0.1:8011", flush=True)
+    print("model-svc: http://127.0.0.1:8012", flush=True)
     print("agent-svc: http://127.0.0.1:8013", flush=True)
-    print("Press Ctrl+C to stop task-svc, agent-svc and agent-worker.", flush=True)
+    print("Press Ctrl+C to stop task-svc, model-svc, agent-svc and agent-worker.", flush=True)
     try:
         while all(process.poll() is None for process in processes):
             time.sleep(1)

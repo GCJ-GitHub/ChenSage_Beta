@@ -41,9 +41,10 @@ POST /internal/execute
 ```
 
 当前实现是 deterministic orchestrator skeleton：根据 `task_type` 选择 content、
-research、arXiv、interview、file 或 generic executor，并通过 Agent Harness 和
-Loop Engine 生成 `plan -> act -> observe -> finalize` trace。后续真实模型、工具、
-记忆和 eval 会逐步替换这些 executor 内部实现。
+research、arXiv、interview、file 或 generic executor，通过 Agent Harness 和
+Loop Engine 生成 `plan -> act -> observe -> finalize` trace，并经由 model-svc
+的 deterministic provider 生成内容。后续真实模型、工具、记忆和 eval 会逐步替换
+这些 executor 内部实现。
 
 Run tests:
 

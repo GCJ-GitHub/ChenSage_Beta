@@ -6,8 +6,20 @@ from app.harness import AgentDefinition, AgentHarness
 from app.schemas.execution import AgentExecutionRequest, AgentExecutionStep
 
 
+class FakeModelClient:
+    def generate(self, *, request, agent, prompt):
+        return {
+            "provider": "fake-model-svc",
+            "model": "fake-deterministic-model",
+            "markdown": "# Harness",
+            "summary": "Harness completed.",
+            "usage": {"prompt_tokens": 2, "completion_tokens": 2, "total_tokens": 4},
+            "trace": {"agent": agent.name, "task_type": request.task_type},
+        }
+
+
 def test_agent_harness_returns_plan_act_observe_finalize_trace() -> None:
-    harness = AgentHarness()
+    harness = AgentHarness(model_client=FakeModelClient())
     response = harness.run(
         request=AgentExecutionRequest(
             task_id="pytest-harness",
@@ -16,8 +28,6 @@ def test_agent_harness_returns_plan_act_observe_finalize_trace() -> None:
         ),
         agent=AgentDefinition(name="content-agent", role="Draft content."),
         executor="content-executor",
-        summary="Harness completed.",
-        markdown="# Harness",
         plan=[
             AgentExecutionStep(name="content-agent.read_goal", detail="Read the goal."),
             AgentExecutionStep(name="content-agent.write_outline", detail="Write the outline."),
@@ -25,10 +35,21 @@ def test_agent_harness_returns_plan_act_observe_finalize_trace() -> None:
     )
 
     phases = [step.phase for step in response.trace]
-    assert phases == ["plan", "act", "observe", "act", "observe", "finalize"]
+    assert phases == [
+        "plan",
+        "act",
+        "observe",
+        "act",
+        "observe",
+        "act",
+        "observe",
+        "finalize",
+    ]
     assert response.result.duration_ms == sum(step.duration_ms for step in response.trace)
     assert response.result.trace == response.trace
     assert response.events == response.trace
+    assert response.result.provider == "fake-model-svc"
+    assert response.result.usage["total_tokens"] == 4
 
 
 def test_internal_execute_response_contains_trace(client) -> None:
@@ -47,3 +68,4 @@ def test_internal_execute_response_contains_trace(client) -> None:
     assert body["trace"][-1]["phase"] == "finalize"
     assert body["result"]["trace"] == body["trace"]
     assert body["result"]["duration_ms"] > 0
+    assert body["result"]["provider"] == "fake-model-svc"

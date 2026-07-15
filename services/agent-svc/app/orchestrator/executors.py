@@ -37,21 +37,10 @@ def content_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
         AgentExecutionStep(name="critic-agent", detail="Prepare a later quality review pass."),
         AgentExecutionStep(name="eval-svc", detail="Reserve structured feedback for phase 2."),
     ]
-    markdown = _markdown_document(
-        "Content Draft",
-        [
-            ("Task type", request.task_type),
-            ("Goal", request.goal),
-            ("Template", request.template or "default content template"),
-            ("Next integration", "Replace deterministic drafting with content-agent + model-svc."),
-        ],
-    )
     return _response(
         request,
         agent=CONTENT_AGENT,
         executor="content-executor",
-        summary="agent-svc produced a deterministic content draft outline.",
-        markdown=markdown,
         steps=steps,
     )
 
@@ -65,21 +54,10 @@ def research_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
         ),
         AgentExecutionStep(name="content-agent", detail="Prepare report synthesis."),
     ]
-    markdown = _markdown_document(
-        "Research Brief",
-        [
-            ("Task type", request.task_type),
-            ("Goal", request.goal),
-            ("Source policy", "Collect sources through tool-registry with audit metadata."),
-            ("Next integration", "Replace deterministic planning with research-agent tools."),
-        ],
-    )
     return _response(
         request,
         agent=RESEARCH_AGENT,
         executor="research-executor",
-        summary="agent-svc produced a deterministic research plan.",
-        markdown=markdown,
         steps=steps,
     )
 
@@ -90,21 +68,10 @@ def arxiv_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
         AgentExecutionStep(name="tool-registry", detail="Prepare arXiv search tool call."),
         AgentExecutionStep(name="critic-agent", detail="Prepare relevance filtering."),
     ]
-    markdown = _markdown_document(
-        "arXiv Daily Brief",
-        [
-            ("Task type", request.task_type),
-            ("Goal", request.goal),
-            ("Paper selection", "Load categories, date range, and max paper count."),
-            ("Next integration", "Replace deterministic outline with arXiv tooling."),
-        ],
-    )
     return _response(
         request,
         agent=ARXIV_AGENT,
         executor="arxiv-executor",
-        summary="agent-svc produced a deterministic arXiv daily brief outline.",
-        markdown=markdown,
         steps=steps,
     )
 
@@ -115,21 +82,10 @@ def interview_executor(request: AgentExecutionRequest) -> AgentExecutionResponse
         AgentExecutionStep(name="interview-agent", detail="Generate role-specific question plan."),
         AgentExecutionStep(name="eval-svc", detail="Prepare answer scoring report."),
     ]
-    markdown = _markdown_document(
-        "Interview Prep",
-        [
-            ("Task type", request.task_type),
-            ("Goal", request.goal),
-            ("Resume flow", "Parse evidence before generating role-specific questions."),
-            ("Next integration", "Replace deterministic outline with interview-agent."),
-        ],
-    )
     return _response(
         request,
         agent=INTERVIEW_AGENT,
         executor="interview-executor",
-        summary="agent-svc produced a deterministic interview prep outline.",
-        markdown=markdown,
         steps=steps,
     )
 
@@ -140,21 +96,10 @@ def file_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
         AgentExecutionStep(name="tool-registry", detail="Select parser for the file type."),
         AgentExecutionStep(name="context-engine", detail="Extract reusable context."),
     ]
-    markdown = _markdown_document(
-        "File Analysis",
-        [
-            ("Task type", request.task_type),
-            ("Goal", request.goal),
-            ("Storage flow", "Read file metadata and object keys from file-svc."),
-            ("Next integration", "Replace deterministic outline with file-agent."),
-        ],
-    )
     return _response(
         request,
         agent=FILE_AGENT,
         executor="file-executor",
-        summary="agent-svc produced a deterministic file analysis outline.",
-        markdown=markdown,
         steps=steps,
     )
 
@@ -164,20 +109,10 @@ def generic_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
         AgentExecutionStep(name="planner-agent", detail="Route unknown task type safely."),
         AgentExecutionStep(name="agent-svc", detail="Return deterministic fallback result."),
     ]
-    markdown = _markdown_document(
-        "Generic Task Result",
-        [
-            ("Task type", request.task_type),
-            ("Goal", request.goal),
-            ("Next integration", "Add a dedicated executor or planner-agent route."),
-        ],
-    )
     return _response(
         request,
         agent=PLANNER_AGENT,
         executor="generic-executor",
-        summary="agent-svc completed the task with the generic deterministic executor.",
-        markdown=markdown,
         steps=steps,
     )
 
@@ -207,21 +142,11 @@ def _response(
     *,
     agent: AgentDefinition,
     executor: str,
-    summary: str,
-    markdown: str,
     steps: list[AgentExecutionStep],
 ) -> AgentExecutionResponse:
     return agent_harness.run(
         request=request,
         agent=agent,
         executor=executor,
-        summary=summary,
-        markdown=markdown,
         plan=steps,
     )
-
-
-def _markdown_document(title: str, rows: list[tuple[str, str]]) -> str:
-    lines = [f"# {title}", ""]
-    lines.extend(f"- {label}: {value}" for label, value in rows)
-    return "\n".join(lines)

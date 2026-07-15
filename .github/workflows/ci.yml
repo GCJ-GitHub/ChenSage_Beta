@@ -50,6 +50,8 @@ jobs:
           POSTGRES_PASSWORD: chensage_dev_password
           POSTGRES_DB: chensage
         run: python -m pytest services/task-svc/tests
+      - name: Model svc tests
+        run: python -m pytest services/model-svc/tests
       - name: Agent svc tests
         run: python -m pytest services/agent-svc/tests
       - name: Agent worker tests

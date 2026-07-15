@@ -35,6 +35,9 @@ class AgentExecutionResult(BaseModel):
     steps: list[AgentExecutionStep]
     trace: list[AgentExecutionStep]
     duration_ms: int = Field(default=0, ge=0)
+    provider: str | None = None
+    model: str | None = None
+    usage: dict[str, Any] = Field(default_factory=dict)
     artifacts: list[dict[str, Any]] = Field(default_factory=list)
 
 
