@@ -20,6 +20,7 @@ config/app/production.yaml
 infra/kubernetes/secrets.yaml
 *.log
 tmp/
+.tmp/
 data/
 minio-data/
 postgres-data/

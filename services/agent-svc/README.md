@@ -67,6 +67,16 @@ GET /prompt-templates/{template_id}
 - 将检索事件写入 trace，并把来源摘要写入 result artifacts。
 - 如果 `knowledge-base-svc` 暂不可用，任务继续执行，trace 记录 `context.knowledge_unavailable`。
 
+阶段 5 起，`agent-svc` 提供对话式任务理解入口：
+
+```bash
+POST /conversation/interpret
+```
+
+当前实现会根据用户消息识别 `content_generation` 和 `content_rewrite`，
+选择内容创作或脱口秀稿模板，预取匹配知识库来源，返回澄清问题、模板选择、
+Agent 选择和可直接提交到 `task-svc` 的任务草稿。
+
 Run tests:
 
 ```bash

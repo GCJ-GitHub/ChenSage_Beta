@@ -1,5 +1,5 @@
-"""Conversation workbench orchestration.
+"""Conversation-agent task interpretation."""
 
-This package will hold conversation-agent logic for task understanding,
-clarifying questions, knowledge selection, and agent routing.
-"""
+from .agent import ConversationAgent
+
+__all__ = ["ConversationAgent"]

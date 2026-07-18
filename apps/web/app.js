@@ -38,6 +38,9 @@ const taskPlans = {
 
 const typeLabels = {
   content: "内容创作",
+  content_generation: "内容创作",
+  content_rewrite: "内容改写",
+  standup_script: "脱口秀稿",
   interview: "模拟面试",
   research: "信息搜集",
   arxiv: "arXiv 日报",
@@ -99,12 +102,26 @@ const knowledgeStatus = document.querySelector("#knowledge-status");
 const knowledgeCurrentType = document.querySelector("#knowledge-current-type");
 const knowledgeTotal = document.querySelector("#knowledge-total");
 const knowledgeList = document.querySelector("#knowledge-list");
+const conversationForm = document.querySelector("#conversation-form");
+const conversationMessage = document.querySelector("#conversation-message");
+const conversationThread = document.querySelector("#conversation-thread");
+const conversationStatus = document.querySelector("#conversation-status");
+const interpretConversationButton = document.querySelector("#interpret-conversation");
+const createConversationTaskButton = document.querySelector("#create-conversation-task");
+const conversationDraftType = document.querySelector("#conversation-draft-type");
+const conversationDraftTemplate = document.querySelector("#conversation-draft-template");
+const conversationDraftAgent = document.querySelector("#conversation-draft-agent");
+const conversationDraftConfidence = document.querySelector("#conversation-draft-confidence");
+const conversationDraftGoal = document.querySelector("#conversation-draft-goal");
+const conversationQuestions = document.querySelector("#conversation-questions");
+const conversationSourceList = document.querySelector("#conversation-source-list");
 
 let tasks = [];
 let selectedTaskId = null;
 let pollHandle = null;
 let modelProvider = null;
 let knowledgeItems = [];
+let conversationDraftPayload = null;
 const promptTemplateCache = new Map();
 
 function escapeHtml(value) {
@@ -124,8 +141,42 @@ function formatTime(value) {
   }).format(new Date(value));
 }
 
+function taskPlanKey(type) {
+  if (["content_generation", "content_rewrite", "standup_script"].includes(type)) {
+    return "content";
+  }
+  return type;
+}
+
+function knowledgeTaskTypeFor(type) {
+  if (["content", "content_generation", "content_rewrite", "standup_script"].includes(type)) {
+    return "content";
+  }
+  if (["research_report", "information_collection"].includes(type)) {
+    return "research";
+  }
+  if (type === "arxiv_daily") {
+    return "arxiv";
+  }
+  if (type === "mock_interview") {
+    return "interview";
+  }
+  return type;
+}
+
+function ensureSelectOption(selectElement, value, label) {
+  const exists = Array.from(selectElement.options).some((option) => option.value === value);
+  if (!exists) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    selectElement.appendChild(option);
+  }
+  selectElement.value = value;
+}
+
 function renderPlan(type) {
-  const plan = taskPlans[type] || taskPlans.content;
+  const plan = taskPlans[taskPlanKey(type)] || taskPlans.content;
   planList.innerHTML = plan
     .map(
       ([title, detail], index) => `
@@ -142,13 +193,15 @@ function renderPlan(type) {
 }
 
 function setActiveFeature(type) {
+  const activeType = taskPlanKey(type);
   featureCards.forEach((card) => {
-    card.classList.toggle("active", card.dataset.feature === type);
+    card.classList.toggle("active", card.dataset.feature === activeType);
   });
   navItems.forEach((item) => {
     item.classList.toggle(
       "active",
-      item.dataset.section === type || (type === "task" && item.dataset.section === "task"),
+      item.dataset.section === activeType ||
+        (type === "task" && item.dataset.section === "task"),
     );
   });
 }
@@ -390,7 +443,7 @@ function renderKnowledgeItems() {
 
 async function fetchKnowledgeItems({ silent = false } = {}) {
   const params = new URLSearchParams({
-    task_type: taskType.value,
+    task_type: knowledgeTaskTypeFor(taskType.value),
     limit: "6",
   });
   try {
@@ -408,6 +461,142 @@ async function fetchKnowledgeItems({ silent = false } = {}) {
     renderKnowledgeItems();
     knowledgeStatus.textContent = "知识库服务未启动";
     knowledgeList.innerHTML = `<p class="empty-state">无法连接 knowledge-base-svc：${escapeHtml(error.message)}</p>`;
+  }
+}
+
+function appendConversationMessage(role, content) {
+  const bubble = document.createElement("article");
+  bubble.className = `message-bubble ${role}`;
+  bubble.innerHTML = `
+    <strong>${role === "user" ? "你" : "ChenSage"}</strong>
+    <p>${escapeHtml(content)}</p>
+  `;
+  conversationThread.appendChild(bubble);
+  conversationThread.scrollTop = conversationThread.scrollHeight;
+}
+
+function renderConversationSources(sources) {
+  if (!sources.length) {
+    conversationSourceList.innerHTML = '<p class="empty-state">暂无匹配知识来源。</p>';
+    return;
+  }
+  conversationSourceList.innerHTML = sources
+    .map((source) => {
+      const nestedSources = (source.sources || [])
+        .slice(0, 2)
+        .map((item) => `<span>${escapeHtml(item.title || item.uri || item.source_type)}</span>`)
+        .join("");
+      return `
+        <article class="conversation-source-item">
+          <strong>${escapeHtml(source.title || "未命名知识")}</strong>
+          <p>${escapeHtml(source.source_type || "source")} · ${escapeHtml(formatQualityScore(source.quality_score))}</p>
+          <div class="source-list">${nestedSources || "<span>暂无来源</span>"}</div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderConversationQuestions(questions) {
+  if (!questions.length) {
+    conversationQuestions.innerHTML = "<span>暂无</span>";
+    return;
+  }
+  conversationQuestions.innerHTML = questions
+    .map((question) => `<span>${escapeHtml(question)}</span>`)
+    .join("");
+}
+
+function applyConversationDraft(result) {
+  conversationDraftPayload = result;
+  const draft = result.task;
+  conversationDraftType.textContent = typeLabels[draft.task_type] || draft.task_type;
+  conversationDraftTemplate.textContent = `${result.template.name} · ${result.template.version}`;
+  conversationDraftAgent.textContent = result.selected_agent;
+  conversationDraftConfidence.textContent = `${Math.round(result.confidence * 100)}%`;
+  conversationDraftGoal.textContent = draft.goal;
+  renderConversationQuestions(result.clarification_questions || []);
+  renderConversationSources(result.knowledge_sources || []);
+  createConversationTaskButton.disabled = false;
+
+  ensureSelectOption(taskType, draft.task_type, typeLabels[draft.task_type] || draft.task_type);
+  ensureSelectOption(taskTemplate, draft.template, result.template.name);
+  taskGoal.value = draft.goal;
+  taskOutputFormat.value = draft.output_format || "Markdown";
+  renderPlan(draft.task_type);
+  setActiveFeature(draft.task_type);
+  loadPromptTemplates(draft.task_type);
+  fetchKnowledgeItems({ silent: true });
+}
+
+async function interpretConversation(event) {
+  event.preventDefault();
+  const message = conversationMessage.value.trim();
+  if (!message) {
+    conversationStatus.textContent = "请输入目标。";
+    return;
+  }
+  interpretConversationButton.disabled = true;
+  createConversationTaskButton.disabled = true;
+  conversationStatus.textContent = "正在解析目标...";
+  appendConversationMessage("user", message);
+  try {
+    const response = await fetch(`${AGENT_API_BASE_URL}/conversation/interpret`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, output_format: taskOutputFormat.value || "Markdown" }),
+    });
+    if (!response.ok) {
+      throw new Error(`agent-svc returned ${response.status}`);
+    }
+    const result = await response.json();
+    applyConversationDraft(result);
+    appendConversationMessage("assistant", result.reply);
+    conversationStatus.textContent = `已解析：${typeLabels[result.task.task_type] || result.task.task_type}`;
+  } catch (error) {
+    conversationDraftPayload = null;
+    conversationStatus.textContent = `解析失败：${error.message}`;
+    appendConversationMessage("assistant", `解析失败：${error.message}`);
+  } finally {
+    interpretConversationButton.disabled = false;
+  }
+}
+
+async function createTaskFromConversation() {
+  if (!conversationDraftPayload) {
+    conversationStatus.textContent = "请先解析目标。";
+    return;
+  }
+  const draft = conversationDraftPayload.task;
+  createConversationTaskButton.disabled = true;
+  conversationStatus.textContent = "正在创建任务...";
+  try {
+    const response = await fetch(`${TASK_API_BASE_URL}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task_type: draft.task_type,
+        goal: draft.goal,
+        template: draft.template,
+        output_format: draft.output_format,
+        input: {
+          ...draft.input,
+          conversation_sources: conversationDraftPayload.knowledge_sources,
+          conversation_template: conversationDraftPayload.template,
+        },
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`task-svc returned ${response.status}`);
+    }
+    const task = await response.json();
+    selectedTaskId = task.id;
+    conversationStatus.textContent = `任务已创建：${task.id}`;
+    appendConversationMessage("assistant", `任务已创建：${task.id}`);
+    await fetchTasks({ silent: true });
+  } catch (error) {
+    conversationStatus.textContent = `创建失败：${error.message}`;
+    createConversationTaskButton.disabled = false;
   }
 }
 
@@ -482,7 +671,7 @@ async function createTask(event) {
         output_format: taskOutputFormat.value,
         input: {
           source: "apps/web static prototype",
-          plan: taskPlans[taskType.value],
+          plan: taskPlans[taskPlanKey(taskType.value)],
         },
       }),
     });
@@ -520,6 +709,8 @@ taskType.addEventListener("change", (event) => {
 });
 
 taskForm.addEventListener("submit", createTask);
+conversationForm.addEventListener("submit", interpretConversation);
+createConversationTaskButton.addEventListener("click", createTaskFromConversation);
 refreshButton.addEventListener("click", () => fetchTasks());
 modelSettingsForm.addEventListener("submit", saveModelProvider);
 testModelProviderButton.addEventListener("click", testModelProvider);
@@ -558,6 +749,11 @@ navItems.forEach((item) => {
     if (type === "knowledge") {
       document
         .querySelector("#knowledge-panel")
+        .scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (type === "conversation") {
+      document
+        .querySelector("#conversation-workbench")
         .scrollIntoView({ behavior: "smooth", block: "start" });
     }
   });

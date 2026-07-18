@@ -19,6 +19,7 @@
 
         <nav class="nav-list">
           <button class="nav-item active" type="button" data-section="task">任务中心</button>
+          <button class="nav-item" type="button" data-section="conversation">对话窗口</button>
           <button class="nav-item" type="button" data-section="content">内容创作</button>
           <button class="nav-item" type="button" data-section="interview">模拟面试</button>
           <button class="nav-item" type="button" data-section="research">信息搜集</button>
@@ -73,6 +74,88 @@
             <strong id="metric-failed">0</strong>
             <span>可在详情查看事件</span>
           </article>
+        </section>
+
+        <section
+          class="conversation-workbench"
+          id="conversation-workbench"
+          aria-labelledby="conversation-title"
+        >
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Conversation</p>
+              <h2 id="conversation-title">对话式生产窗口</h2>
+            </div>
+            <span class="status-pill cool" id="conversation-status">conversation-agent</span>
+          </div>
+
+          <div class="conversation-layout">
+            <section class="conversation-chat" aria-label="对话">
+              <div class="conversation-thread" id="conversation-thread">
+                <article class="message-bubble assistant">
+                  <strong>ChenSage</strong>
+                  <p>把你的内容目标发过来，我会整理任务类型、模板和知识来源。</p>
+                </article>
+              </div>
+
+              <form class="conversation-form" id="conversation-form">
+                <label>
+                  <span>目标描述</span>
+                  <textarea id="conversation-message" rows="4">写一篇公众号文章，主题是阶段 5 对话式生产窗口如何把目标、模板和知识库串起来，语气清晰。</textarea>
+                </label>
+                <div class="conversation-actions">
+                  <button class="secondary-button" type="submit" id="interpret-conversation">
+                    解析目标
+                  </button>
+                  <button
+                    class="primary-button"
+                    type="button"
+                    id="create-conversation-task"
+                    disabled
+                  >
+                    创建任务
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <aside class="conversation-draft" aria-label="任务草案">
+              <div class="draft-grid">
+                <div class="setting-item">
+                  <span>任务类型</span>
+                  <strong id="conversation-draft-type">-</strong>
+                </div>
+                <div class="setting-item">
+                  <span>模板</span>
+                  <strong id="conversation-draft-template">-</strong>
+                </div>
+                <div class="setting-item">
+                  <span>Agent</span>
+                  <strong id="conversation-draft-agent">-</strong>
+                </div>
+                <div class="setting-item">
+                  <span>置信度</span>
+                  <strong id="conversation-draft-confidence">-</strong>
+                </div>
+              </div>
+              <div class="draft-block">
+                <p class="panel-label">任务目标</p>
+                <p id="conversation-draft-goal" class="empty-state">等待解析。</p>
+              </div>
+              <div class="draft-block">
+                <p class="panel-label">澄清问题</p>
+                <div id="conversation-questions" class="conversation-chip-list">
+                  <span>暂无</span>
+                </div>
+              </div>
+              <div class="draft-block">
+                <p class="panel-label">知识来源</p>
+                <div id="conversation-source-list" class="conversation-source-list">
+                  <p class="empty-state">等待知识库检索。</p>
+                </div>
+              </div>
+            </aside>
+          </div>
         </section>
 
         <section class="main-grid">

@@ -1,4 +1,4 @@
-"""Run the phase 1-4 local development stack."""
+"""Run the phase 1-5 local development stack."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def stop_processes(processes: list[subprocess.Popen]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run the ChenSage phase 1-4 local stack.")
+    parser = argparse.ArgumentParser(description="Run the ChenSage phase 1-5 local stack.")
     parser.add_argument("--skip-infra", action="store_true", help="Do not start Docker Compose.")
     parser.add_argument(
         "--skip-migrate",
@@ -176,7 +176,7 @@ def main() -> int:
         ),
     ]
 
-    print("\nPhase 1-4 stack is starting. API: http://127.0.0.1:8011", flush=True)
+    print("\nPhase 1-5 stack is starting. API: http://127.0.0.1:8011", flush=True)
     print("model-svc: http://127.0.0.1:8012", flush=True)
     print("agent-svc: http://127.0.0.1:8013", flush=True)
     print("knowledge-base-svc: http://127.0.0.1:8014", flush=True)

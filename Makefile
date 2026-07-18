@@ -17,7 +17,7 @@ help:
 	@echo "  make test-knowledge-base-svc Run knowledge-base-svc API tests"
 	@echo "  make test-agent-worker Run agent-worker boundary tests"
 	@echo "  make check-stage1     Run current local stack checks"
-	@echo "  make dev-stage1       Start infra, migrate and local phase 1-4 services"
+	@echo "  make dev-stage1       Start infra, migrate and local phase 1-5 services"
 	@echo "  make infra-down       Stop local infrastructure"
 	@echo "  make infra-ps         Show local infrastructure status"
 	@echo "  make check-stage0     Verify phase 0 project skeleton"
