@@ -1,5 +1,6 @@
 const TASK_API_BASE_URL = window.CHENSAGE_TASK_API_URL || "http://localhost:8011";
 const MODEL_API_BASE_URL = window.CHENSAGE_MODEL_API_URL || "http://localhost:8012";
+const AGENT_API_BASE_URL = window.CHENSAGE_AGENT_API_URL || "http://localhost:8013";
 
 const taskPlans = {
   content: [
@@ -98,6 +99,7 @@ let tasks = [];
 let selectedTaskId = null;
 let pollHandle = null;
 let modelProvider = null;
+const promptTemplateCache = new Map();
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -268,6 +270,42 @@ async function fetchTasks({ silent = false } = {}) {
   }
 }
 
+function renderPromptTemplates(templates) {
+  if (!templates.length) {
+    return;
+  }
+  const currentValue = taskTemplate.value;
+  taskTemplate.innerHTML = templates
+    .map(
+      (template) =>
+        `<option value="${escapeHtml(template.id)}">${escapeHtml(template.name)} · ${escapeHtml(template.version)}</option>`,
+    )
+    .join("");
+  if (templates.some((template) => template.id === currentValue)) {
+    taskTemplate.value = currentValue;
+  }
+}
+
+async function loadPromptTemplates(type) {
+  if (promptTemplateCache.has(type)) {
+    renderPromptTemplates(promptTemplateCache.get(type));
+    return;
+  }
+  try {
+    const response = await fetch(
+      `${AGENT_API_BASE_URL}/prompt-templates?task_type=${encodeURIComponent(type)}`,
+    );
+    if (!response.ok) {
+      throw new Error(`agent-svc returned ${response.status}`);
+    }
+    const templates = await response.json();
+    promptTemplateCache.set(type, templates);
+    renderPromptTemplates(templates);
+  } catch (error) {
+    console.warn("Unable to load prompt templates", error);
+  }
+}
+
 function renderModelProvider(provider) {
   modelProvider = provider;
   const providerLabel =
@@ -402,6 +440,7 @@ taskType.addEventListener("change", (event) => {
   const type = event.target.value;
   renderPlan(type);
   setActiveFeature(type);
+  loadPromptTemplates(type);
 });
 
 taskForm.addEventListener("submit", createTask);
@@ -435,8 +474,12 @@ navItems.forEach((item) => {
     if (type === "model") {
       document.querySelector("#config-title").scrollIntoView({ behavior: "smooth", block: "start" });
     }
+    if (type === "prompt") {
+      taskTemplate.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   });
 });
 
 fetchTasks();
 fetchModelProvider();
+loadPromptTemplates(taskType.value);

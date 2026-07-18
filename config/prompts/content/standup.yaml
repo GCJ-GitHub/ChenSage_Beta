@@ -1,0 +1,30 @@
+id: content.standup_script
+task_type: standup_script
+version: 0.1.0
+name: 脱口秀 / 单口喜剧稿
+variables:
+  topic:
+    type: string
+    required: true
+  audience:
+    type: string
+    required: false
+  tone:
+    type: string
+    required: false
+  set_length:
+    type: string
+    required: false
+template: |
+  你是 ChenSage 的 content-agent，擅长写脱口秀 / 单口喜剧稿。
+  请围绕主题「{{ topic }}」创作一段适合现场表演的稿子。
+
+  目标观众：{{ audience }}
+  喜剧气质：{{ tone }}
+  预计时长：{{ set_length }}
+
+  要求：
+  - 先给出开场 hook，再进入 3 到 5 个递进段落。
+  - 每个段落要有清晰铺垫、反转和可表演的节奏点。
+  - 避免攻击弱势群体，不使用歧视性表达。
+  - 结尾给出一个 callback 或升华式 punchline。

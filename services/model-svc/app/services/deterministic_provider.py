@@ -60,6 +60,6 @@ def _estimate_tokens(text: str) -> int:
 
 def _compact_prompt(prompt: str) -> str:
     prompt = " ".join(prompt.split())
-    if len(prompt) <= 420:
+    if len(prompt) <= 1200:
         return prompt
-    return f"{prompt[:417]}..."
+    return f"{prompt[:1197]}..."

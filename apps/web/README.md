@@ -20,15 +20,17 @@ app.js
 - 不直接访问内部服务、数据库、对象存储或模型 Provider。
 
 当前静态原型还没有 gateway 代理层，所以临时通过
-`window.CHENSAGE_TASK_API_URL` 和 `window.CHENSAGE_MODEL_API_URL` 直连
-`task-svc`、`model-svc`，用于验证任务中心和模型设置页。迁移到正式 Next.js 后，
-这些调用应收敛到 gateway。
+`window.CHENSAGE_TASK_API_URL`、`window.CHENSAGE_MODEL_API_URL` 和
+`window.CHENSAGE_AGENT_API_URL` 直连 `task-svc`、`model-svc`、`agent-svc`，
+用于验证任务中心、模型设置页和提示词模板选择。迁移到正式 Next.js 后，这些调用应
+收敛到 gateway。
 
 第一版页面建议：
 
 - 任务创建页。
 - 任务详情页。
 - 模型设置页。
+- 提示词模板选择。
 - 审批队列页。
 - 记忆治理页。
 - Agent trace / eval report 查看页。

@@ -420,7 +420,8 @@ services/*/config/             服务自己的配置读取边界
 - 真实 `.env`、生产配置和 Secret 不提交到 GitHub。
 - `model-svc` 是唯一读取大模型 API Key 的服务。
 - OpenAI-compatible API 的 base URL、API Key、默认模型通过环境变量或模型设置页交给 `model-svc` 管理；API Key 只接收、不回显完整值。
-- 提示词模板先放在 `config/prompts/`，由 `agent-svc` 加载；后续复杂后再考虑拆 `prompt-svc`。
+- 提示词模板先放在 `config/prompts/`，由 `agent-svc` 的 `/prompt-templates`
+  API 加载并在任务执行时渲染；后续复杂后再考虑拆 `prompt-svc`。
 
 ## 推荐落地路线
 

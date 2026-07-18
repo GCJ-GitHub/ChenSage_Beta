@@ -46,6 +46,19 @@ Loop Engine 生成 `plan -> act -> observe -> finalize` trace，并经由 model-
 的 deterministic provider 生成内容。后续真实模型、工具、记忆和 eval 会逐步替换
 这些 executor 内部实现。
 
+阶段 3 起，`agent-svc` 开始加载 `config/prompts/**/*.yaml` 作为提示词模板
+registry：
+
+```bash
+GET /prompt-templates
+GET /prompt-templates?task_type=content
+GET /prompt-templates/{template_id}
+```
+
+`PromptBuilder` 会按 `task.template` 解析模板 id，渲染 `task.input`、目标、
+任务类型和输出格式后再交给 `model-svc`。如果某个任务类型暂时没有专属模板，会回落到
+`generic.default`，保证未知任务和后续功能原型不会因为模板缺失而中断。
+
 Run tests:
 
 ```bash
