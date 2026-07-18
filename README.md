@@ -75,6 +75,9 @@ agent-svc on `http://127.0.0.1:8013`, and the `agent-worker` consumer.
 | `make run-agent-worker` | 启动阶段 0 worker 占位入口 |
 
 真实 `.env` 不进入 Git。大模型 API Key 只通过 `model-svc` 的配置边界读取。
+默认 `MODEL_PROVIDER_TYPE=deterministic`，可以离线跑通阶段 2 主链路；切换
+OpenAI-compatible Provider 时，只在 `.env` 或模型设置页交给 `model-svc`，
+接口响应只返回脱敏后的 Key 预览。
 
 ## 核心定位
 
@@ -416,7 +419,7 @@ services/*/config/             服务自己的配置读取边界
 
 - 真实 `.env`、生产配置和 Secret 不提交到 GitHub。
 - `model-svc` 是唯一读取大模型 API Key 的服务。
-- OpenAI-compatible API 的 base URL、API Key、默认模型通过环境变量或后续模型设置页交给 `model-svc` 管理。
+- OpenAI-compatible API 的 base URL、API Key、默认模型通过环境变量或模型设置页交给 `model-svc` 管理；API Key 只接收、不回显完整值。
 - 提示词模板先放在 `config/prompts/`，由 `agent-svc` 加载；后续复杂后再考虑拆 `prompt-svc`。
 
 ## 推荐落地路线

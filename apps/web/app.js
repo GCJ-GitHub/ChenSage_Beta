@@ -1,4 +1,5 @@
 const TASK_API_BASE_URL = window.CHENSAGE_TASK_API_URL || "http://localhost:8011";
+const MODEL_API_BASE_URL = window.CHENSAGE_MODEL_API_URL || "http://localhost:8012";
 
 const taskPlans = {
   content: [
@@ -80,10 +81,23 @@ const metricRunningDetail = document.querySelector("#metric-running-detail");
 const metricQueued = document.querySelector("#metric-queued");
 const metricSucceeded = document.querySelector("#metric-succeeded");
 const metricFailed = document.querySelector("#metric-failed");
+const modelProviderSummary = document.querySelector("#model-provider-summary");
+const modelDefaultSummary = document.querySelector("#model-default-summary");
+const modelKeySummary = document.querySelector("#model-key-summary");
+const modelSourceSummary = document.querySelector("#model-source-summary");
+const modelSettingsForm = document.querySelector("#model-settings-form");
+const modelProviderType = document.querySelector("#model-provider-type");
+const modelBaseUrl = document.querySelector("#model-base-url");
+const modelDefaultModel = document.querySelector("#model-default-model");
+const modelApiKey = document.querySelector("#model-api-key");
+const modelSettingsStatus = document.querySelector("#model-settings-status");
+const testModelProviderButton = document.querySelector("#test-model-provider");
+const saveModelProviderButton = document.querySelector("#save-model-provider");
 
 let tasks = [];
 let selectedTaskId = null;
 let pollHandle = null;
+let modelProvider = null;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -162,7 +176,7 @@ function renderTasks() {
           <td>${escapeHtml(task.goal.slice(0, 48))}${task.goal.length > 48 ? "..." : ""}</td>
           <td>${escapeHtml(typeLabels[task.task_type] || task.task_type)}</td>
           <td><span class="state ${stateClass}">${escapeHtml(statusLabels[task.status] || task.status)}</span></td>
-          <td>${task.result ? "stub" : "-"}</td>
+          <td>${formatTaskCost(task)}</td>
           <td>${formatTime(task.updated_at)}</td>
         </tr>
       `;
@@ -176,6 +190,14 @@ function renderTasks() {
       renderTaskDetail(tasks.find((task) => task.id === selectedTaskId));
     });
   });
+}
+
+function formatTaskCost(task) {
+  const totalTokens = task.result?.usage?.total_tokens;
+  if (totalTokens) {
+    return `${totalTokens} tokens`;
+  }
+  return task.result?.provider || "-";
 }
 
 function renderTaskDetail(task) {
@@ -246,6 +268,92 @@ async function fetchTasks({ silent = false } = {}) {
   }
 }
 
+function renderModelProvider(provider) {
+  modelProvider = provider;
+  const providerLabel =
+    provider.provider_type === "openai_compatible" ? "OpenAI-compatible" : "Deterministic";
+  modelProviderSummary.textContent = providerLabel;
+  modelDefaultSummary.textContent = provider.default_model;
+  modelKeySummary.textContent = provider.api_key_configured
+    ? provider.api_key_preview || "已配置"
+    : "未配置";
+  modelSourceSummary.textContent = provider.source === "runtime" ? "运行时" : "环境变量";
+  modelProviderType.value = provider.provider_type;
+  modelBaseUrl.value = provider.base_url;
+  modelDefaultModel.value = provider.default_model;
+  modelApiKey.value = "";
+}
+
+async function fetchModelProvider() {
+  try {
+    const response = await fetch(`${MODEL_API_BASE_URL}/model-providers/default`);
+    if (!response.ok) {
+      throw new Error(`model-svc returned ${response.status}`);
+    }
+    const provider = await response.json();
+    renderModelProvider(provider);
+    modelSettingsStatus.textContent = `已连接 model-svc：${MODEL_API_BASE_URL}`;
+  } catch (error) {
+    modelSettingsStatus.textContent = `无法连接 model-svc：${error.message}`;
+  }
+}
+
+async function saveModelProvider(event) {
+  event.preventDefault();
+  saveModelProviderButton.disabled = true;
+  modelSettingsStatus.textContent = "正在保存模型设置...";
+  try {
+    const payload = {
+      name: "Default provider",
+      provider_type: modelProviderType.value,
+      base_url: modelBaseUrl.value,
+      default_model: modelDefaultModel.value,
+      enabled: true,
+    };
+    if (modelApiKey.value) {
+      payload.api_key = modelApiKey.value;
+    }
+    const response = await fetch(`${MODEL_API_BASE_URL}/model-providers/default`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      throw new Error(`model-svc returned ${response.status}`);
+    }
+    renderModelProvider(await response.json());
+    modelSettingsStatus.textContent = "模型设置已保存。";
+  } catch (error) {
+    modelSettingsStatus.textContent = `保存失败：${error.message}`;
+  } finally {
+    saveModelProviderButton.disabled = false;
+  }
+}
+
+async function testModelProvider() {
+  testModelProviderButton.disabled = true;
+  modelSettingsStatus.textContent = "正在测试模型连接...";
+  try {
+    const response = await fetch(`${MODEL_API_BASE_URL}/model-providers/default/test`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "请返回一句 ChenSage 模型连通性确认。" }),
+    });
+    if (!response.ok) {
+      throw new Error(`model-svc returned ${response.status}`);
+    }
+    const result = await response.json();
+    modelSettingsStatus.textContent =
+      result.status === "succeeded"
+        ? `连接成功：${result.provider} / ${result.model} / ${result.latency_ms}ms`
+        : `连接失败：${result.error || result.message}`;
+  } catch (error) {
+    modelSettingsStatus.textContent = `测试失败：${error.message}`;
+  } finally {
+    testModelProviderButton.disabled = false;
+  }
+}
+
 async function createTask(event) {
   event.preventDefault();
   createButton.disabled = true;
@@ -298,6 +406,8 @@ taskType.addEventListener("change", (event) => {
 
 taskForm.addEventListener("submit", createTask);
 refreshButton.addEventListener("click", () => fetchTasks());
+modelSettingsForm.addEventListener("submit", saveModelProvider);
+testModelProviderButton.addEventListener("click", testModelProvider);
 newTaskButton.addEventListener("click", () => {
   taskGoal.focus();
   setActiveFeature("task");
@@ -322,7 +432,11 @@ navItems.forEach((item) => {
     }
     navItems.forEach((navItem) => navItem.classList.remove("active"));
     item.classList.add("active");
+    if (type === "model") {
+      document.querySelector("#config-title").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   });
 });
 
 fetchTasks();
+fetchModelProvider();

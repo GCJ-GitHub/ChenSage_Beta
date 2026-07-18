@@ -243,34 +243,55 @@
 
             <div class="setting-list">
               <div class="setting-item">
-                <span>OpenAI-compatible API</span>
-                <strong>已连接</strong>
+                <span>Provider 类型</span>
+                <strong id="model-provider-summary">加载中</strong>
               </div>
               <div class="setting-item">
                 <span>默认模型</span>
-                <strong>gpt-4.1</strong>
+                <strong id="model-default-summary">-</strong>
               </div>
               <div class="setting-item">
-                <span>启用模板</span>
-                <strong>12 个</strong>
+                <span>API Key</span>
+                <strong id="model-key-summary">-</strong>
               </div>
               <div class="setting-item">
-                <span>解析文件</span>
-                <strong>PDF / DOCX / TXT / MD</strong>
+                <span>配置来源</span>
+                <strong id="model-source-summary">-</strong>
               </div>
             </div>
 
-            <div class="approval-box">
-              <p class="panel-label">待审批动作</p>
-              <button class="approval-row" type="button">
-                <span>允许访问未知外部域名</span>
-                <strong>审核</strong>
-              </button>
-              <button class="approval-row" type="button">
-                <span>写入长期偏好记忆</span>
-                <strong>审核</strong>
-              </button>
-            </div>
+            <form class="model-settings-form" id="model-settings-form">
+              <label>
+                <span>Provider</span>
+                <select id="model-provider-type">
+                  <option value="deterministic">Deterministic 本地占位</option>
+                  <option value="openai_compatible">OpenAI-compatible</option>
+                </select>
+              </label>
+              <label>
+                <span>Base URL</span>
+                <input id="model-base-url" type="url" value="https://api.openai.com/v1" />
+              </label>
+              <label>
+                <span>默认模型</span>
+                <input id="model-default-model" type="text" value="gpt-4.1" />
+              </label>
+              <label>
+                <span>API Key</span>
+                <input id="model-api-key" type="password" placeholder="留空则保留当前 Key" />
+              </label>
+              <div class="model-actions">
+                <button class="secondary-button" type="button" id="test-model-provider">
+                  测试连接
+                </button>
+                <button class="primary-button" type="submit" id="save-model-provider">
+                  保存设置
+                </button>
+              </div>
+              <p class="inline-status" id="model-settings-status">
+                正在连接 model-svc...
+              </p>
+            </form>
           </aside>
         </section>
       </main>

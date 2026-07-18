@@ -16,5 +16,8 @@ from app.main import create_app  # noqa: E402
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    monkeypatch.setenv("MODEL_PROVIDER_TYPE", "deterministic")
+    monkeypatch.delenv("OPENAI_COMPATIBLE_API_KEY", raising=False)
+    monkeypatch.setenv("DEFAULT_MODEL", "gpt-4.1")
     return TestClient(create_app())

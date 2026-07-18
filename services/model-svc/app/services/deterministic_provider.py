@@ -10,11 +10,16 @@ from app.schemas.generation import ModelGenerateRequest, ModelGenerateResponse, 
 class DeterministicModelProvider:
     provider_name = "deterministic"
 
-    def __init__(self, settings: ModelServiceSettings | None = None) -> None:
+    def __init__(
+        self,
+        settings: ModelServiceSettings | None = None,
+        default_model: str | None = None,
+    ) -> None:
         self.settings = settings or ModelServiceSettings.from_env()
+        self.default_model = default_model
 
     def generate(self, request: ModelGenerateRequest) -> ModelGenerateResponse:
-        model = self.settings.default_model or "deterministic-agentos"
+        model = self.default_model or self.settings.default_model or "deterministic-agentos"
         markdown = "\n".join(
             [
                 f"# {request.agent} Deterministic Output",

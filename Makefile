@@ -11,7 +11,7 @@ help:
 	@echo "  make infra-up         Start PostgreSQL, RabbitMQ, Redis and MinIO"
 	@echo "  make migrate-task-svc Run task-svc Alembic migrations"
 	@echo "  make test-task-svc    Run task-svc API and PostgreSQL store tests"
-	@echo "  make test-model-svc   Run model-svc deterministic provider tests"
+	@echo "  make test-model-svc   Run model-svc provider config and generation tests"
 	@echo "  make test-agent-svc   Run agent-svc orchestrator tests"
 	@echo "  make test-agent-worker Run agent-worker boundary tests"
 	@echo "  make check-stage1     Run stage 1 checks"

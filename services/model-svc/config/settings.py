@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class ModelServiceSettings:
+    provider_type: str
     provider_base_url: str
     provider_api_key: str
     default_model: str
@@ -22,6 +23,7 @@ class ModelServiceSettings:
     @classmethod
     def from_env(cls) -> ModelServiceSettings:
         return cls(
+            provider_type=os.getenv("MODEL_PROVIDER_TYPE", "deterministic"),
             provider_base_url=os.getenv("OPENAI_COMPATIBLE_BASE_URL", "https://api.openai.com/v1"),
             provider_api_key=os.getenv("OPENAI_COMPATIBLE_API_KEY", ""),
             default_model=os.getenv("DEFAULT_MODEL", "gpt-4.1"),
@@ -32,7 +34,7 @@ class ModelServiceSettings:
 
     def validate_for_runtime(self) -> None:
         missing = []
-        if not self.provider_api_key:
+        if self.provider_type == "openai_compatible" and not self.provider_api_key:
             missing.append("OPENAI_COMPATIBLE_API_KEY")
         if not self.encryption_key:
             missing.append("MODEL_CONFIG_ENCRYPTION_KEY")
