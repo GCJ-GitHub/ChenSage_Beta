@@ -29,6 +29,7 @@ make setup-env
 make setup-python
 make infra-up
 make migrate-task-svc
+make migrate-knowledge-base-svc
 make test-task-svc
 make test-model-svc
 make test-agent-svc
@@ -47,6 +48,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 docker compose --env-file infra/docker/.env -f infra/docker/docker-compose.yml up -d
 .\.venv\Scripts\python.exe -m alembic -c services/task-svc/alembic.ini upgrade head
+.\.venv\Scripts\python.exe -m alembic -c services/knowledge-base-svc/alembic.ini upgrade head
 .\.venv\Scripts\python.exe -m pytest services/task-svc/tests
 .\.venv\Scripts\python.exe -m pytest services/model-svc/tests
 .\.venv\Scripts\python.exe -m pytest services/agent-svc/tests
@@ -62,7 +64,7 @@ Stage 1-4 local task loop:
 make dev-stage1
 ```
 
-This starts Docker Compose dependencies, runs task-svc migrations, then starts
+This starts Docker Compose dependencies, runs task-svc and knowledge-base-svc migrations, then starts
 task-svc on `http://127.0.0.1:8011`, model-svc on `http://127.0.0.1:8012`,
 agent-svc on `http://127.0.0.1:8013`, knowledge-base-svc on
 `http://127.0.0.1:8014`, and the `agent-worker` consumer.
@@ -426,8 +428,8 @@ services/*/config/             服务自己的配置读取边界
 - OpenAI-compatible API 的 base URL、API Key、默认模型通过环境变量或模型设置页交给 `model-svc` 管理；API Key 只接收、不回显完整值。
 - 提示词模板先放在 `config/prompts/`，由 `agent-svc` 的 `/prompt-templates`
   API 加载并在任务执行时渲染；后续复杂后再考虑拆 `prompt-svc`。
-- 知识库阶段先由 `knowledge-base-svc` 提供进程内存储的最小 API：`/knowledge-items`
-  支持创建、筛选和读取知识条目，`/knowledge-items/search` 支持按任务类型、标签、质量分和关键词检索；embedding 字段已预留给后续 PostgreSQL + pgvector 持久化实现。
+- 知识库阶段由 `knowledge-base-svc` 提供 PostgreSQL 持久化 API：`/knowledge-items`
+  支持创建、筛选和读取知识条目，`/knowledge-items/search` 支持按任务类型、标签、质量分和关键词检索；embedding 字段已预留给后续 pgvector 语义检索实现。
 
 ## 推荐落地路线
 

@@ -54,7 +54,19 @@ jobs:
         run: python -m pytest services/model-svc/tests
       - name: Agent svc tests
         run: python -m pytest services/agent-svc/tests
+      - name: Knowledge base svc migrations
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_USER: chensage
+          POSTGRES_PASSWORD: chensage_dev_password
+          POSTGRES_DB: chensage
+        run: python -m alembic -c services/knowledge-base-svc/alembic.ini upgrade head
       - name: Knowledge base svc tests
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_USER: chensage
+          POSTGRES_PASSWORD: chensage_dev_password
+          POSTGRES_DB: chensage
         run: python -m pytest services/knowledge-base-svc/tests
       - name: Agent worker tests
         run: python -m pytest workers/agent-worker/tests

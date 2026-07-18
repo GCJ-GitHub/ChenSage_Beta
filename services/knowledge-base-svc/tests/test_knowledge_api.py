@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from app.services.knowledge_store import KnowledgeStore
 
-def _create_item(client, *, title: str = "High quality content example") -> dict:
+
+def _create_item(client, *, title: str = "Pytest high quality content example") -> dict:
     response = client.post(
         "/knowledge-items",
         json={
@@ -52,7 +54,7 @@ def test_list_items_filters_by_task_type_status_tag_and_quality(client) -> None:
     client.post(
         "/knowledge-items",
         json={
-            "title": "Draft research note",
+            "title": "Pytest draft research note",
             "task_type": "research",
             "source_type": "manual",
             "status": "draft",
@@ -83,6 +85,15 @@ def test_search_items_matches_chunk_text(client) -> None:
     body = response.json()
     assert body["total"] == 1
     assert body["items"][0]["id"] == item["id"]
+
+
+def test_item_persists_across_store_instances(client) -> None:
+    item = _create_item(client, title="Pytest persistent content example")
+
+    loaded = KnowledgeStore().get_item(item["id"])
+
+    assert loaded.title == "Pytest persistent content example"
+    assert loaded.sources[0].uri == "task://pytest-knowledge"
 
 
 def test_add_source_and_chunk_to_existing_item(client) -> None:

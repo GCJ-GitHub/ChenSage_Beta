@@ -2,11 +2,14 @@
 
 Alembic migrations owned by `knowledge-base-svc`.
 
-Expected tables:
+Current stage 4 migration creates:
 
 - `knowledge_items`
 - `knowledge_chunks`
 - `knowledge_sources`
+
+Expected future tables:
+
 - `content_versions`
 - `content_feedback`
 - `knowledge_links`

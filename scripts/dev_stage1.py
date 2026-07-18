@@ -87,6 +87,18 @@ def main() -> int:
             ],
             env=env,
         )
+        run_step(
+            [
+                sys.executable,
+                "-m",
+                "alembic",
+                "-c",
+                "services/knowledge-base-svc/alembic.ini",
+                "upgrade",
+                "head",
+            ],
+            env=env,
+        )
 
     processes = [
         start_process(

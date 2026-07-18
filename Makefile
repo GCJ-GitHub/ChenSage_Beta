@@ -2,7 +2,7 @@ PYTHON ?= python3
 DOCKER_COMPOSE ?= docker compose
 DOCKER_COMPOSE_FILE ?= infra/docker/docker-compose.yml
 
-.PHONY: help setup-env setup-python infra-up infra-down infra-ps migrate-task-svc test-task-svc test-model-svc test-agent-svc test-knowledge-base-svc test-agent-worker check-stage0 check-stage1 compile-services run-gateway run-task-svc run-model-svc run-agent-svc run-knowledge-base-svc run-agent-worker dev-task-svc dev-model-svc dev-agent-svc dev-knowledge-base-svc dev-agent-worker dev-stage1
+.PHONY: help setup-env setup-python infra-up infra-down infra-ps migrate-task-svc migrate-knowledge-base-svc test-task-svc test-model-svc test-agent-svc test-knowledge-base-svc test-agent-worker check-stage0 check-stage1 compile-services run-gateway run-task-svc run-model-svc run-agent-svc run-knowledge-base-svc run-agent-worker dev-task-svc dev-model-svc dev-agent-svc dev-knowledge-base-svc dev-agent-worker dev-stage1
 
 help:
 	@echo "ChenSage AgentOS development commands"
@@ -10,6 +10,7 @@ help:
 	@echo "  make setup-python     Install Python runtime and dev dependencies"
 	@echo "  make infra-up         Start PostgreSQL, RabbitMQ, Redis and MinIO"
 	@echo "  make migrate-task-svc Run task-svc Alembic migrations"
+	@echo "  make migrate-knowledge-base-svc Run knowledge-base-svc Alembic migrations"
 	@echo "  make test-task-svc    Run task-svc API and PostgreSQL store tests"
 	@echo "  make test-model-svc   Run model-svc provider config and generation tests"
 	@echo "  make test-agent-svc   Run agent-svc orchestrator tests"
@@ -41,6 +42,9 @@ infra-ps:
 migrate-task-svc:
 	$(PYTHON) -m alembic -c services/task-svc/alembic.ini upgrade head
 
+migrate-knowledge-base-svc:
+	$(PYTHON) -m alembic -c services/knowledge-base-svc/alembic.ini upgrade head
+
 test-task-svc:
 	$(PYTHON) -m pytest services/task-svc/tests
 
@@ -59,7 +63,7 @@ test-agent-worker:
 check-stage0:
 	$(PYTHON) scripts/check_stage0.py
 
-check-stage1: check-stage0 migrate-task-svc test-task-svc test-model-svc test-agent-svc test-knowledge-base-svc test-agent-worker compile-services
+check-stage1: check-stage0 migrate-task-svc migrate-knowledge-base-svc test-task-svc test-model-svc test-agent-svc test-knowledge-base-svc test-agent-worker compile-services
 
 compile-services:
 	$(PYTHON) -m compileall services workers packages scripts

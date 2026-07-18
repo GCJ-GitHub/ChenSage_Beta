@@ -36,8 +36,8 @@ prompt_optimization_suggestions
 | `POST` | `/knowledge-items/{item_id}/chunks` | 追加知识片段 |
 | `POST` | `/knowledge-items/{item_id}/sources` | 追加资料来源 |
 
-阶段 4 先使用进程内存储，目的是稳定服务边界和前端引用展示；后续会替换为
-PostgreSQL + pgvector，并把 `embedding` / `embedding_model` 字段接入语义检索。
+阶段 4 使用 PostgreSQL 持久化知识条目、片段和来源；`embedding` /
+`embedding_model` 字段已预留，后续会引入 pgvector 语义检索和权重排序。
 
 边界：
 

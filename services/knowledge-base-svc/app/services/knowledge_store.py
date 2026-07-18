@@ -1,4 +1,4 @@
-"""Process-local knowledge store used before database persistence is introduced."""
+"""PostgreSQL-backed knowledge store."""
 
 from __future__ import annotations
 
@@ -6,6 +6,11 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session, joinedload
+
+from app.db import session_scope
+from app.models.knowledge import KnowledgeChunkModel, KnowledgeItemModel, KnowledgeSourceModel
 from app.schemas.knowledge import (
     KnowledgeChunkCreate,
     KnowledgeChunkResponse,
@@ -23,65 +28,71 @@ class KnowledgeItemNotFoundError(KeyError):
 
 
 class KnowledgeStore:
-    def __init__(self) -> None:
-        self._items: dict[str, KnowledgeItemResponse] = {}
-
     def create_item(self, request: KnowledgeItemCreate) -> KnowledgeItemResponse:
         item_id = str(uuid4())
-        now = self._now()
-        sources = [self._build_source(item_id, source, now) for source in request.sources]
-        chunks = [self._build_chunk(item_id, chunk, now) for chunk in request.chunks]
-        item = KnowledgeItemResponse(
-            id=item_id,
-            title=request.title,
-            summary=request.summary,
-            task_type=request.task_type,
-            source_type=request.source_type,
-            status=request.status,
-            quality_score=request.quality_score,
-            tags=self._normalize_tags(request.tags),
-            metadata=request.metadata,
-            embedding_model=request.embedding_model,
-            embedding=request.embedding,
-            sources=sources,
-            chunks=chunks,
-            created_at=now,
-            updated_at=now,
-        )
-        self._items[item_id] = item
-        return item
+        with session_scope() as session:
+            item = KnowledgeItemModel(
+                id=item_id,
+                title=request.title,
+                summary=request.summary,
+                task_type=request.task_type,
+                source_type=request.source_type,
+                status=request.status,
+                quality_score=request.quality_score,
+                tags=self._normalize_tags(request.tags),
+                item_metadata=request.metadata,
+                embedding_model=request.embedding_model,
+                embedding=request.embedding,
+                sources=[
+                    self._build_source_model(item_id, source) for source in request.sources
+                ],
+                chunks=[self._build_chunk_model(item_id, chunk) for chunk in request.chunks],
+            )
+            session.add(item)
+            session.flush()
+            loaded = self._get_model(session, item_id)
+            if loaded is None:
+                raise KnowledgeItemNotFoundError(item_id)
+            return self._to_item_response(loaded)
 
     def get_item(self, item_id: str) -> KnowledgeItemResponse:
-        try:
-            return self._items[item_id]
-        except KeyError as exc:
-            raise KnowledgeItemNotFoundError(item_id) from exc
+        with session_scope() as session:
+            item = self._get_model(session, item_id)
+            if item is None:
+                raise KnowledgeItemNotFoundError(item_id)
+            return self._to_item_response(item)
 
     def add_chunk(
         self,
         item_id: str,
         request: KnowledgeChunkCreate,
     ) -> KnowledgeChunkResponse:
-        item = self.get_item(item_id)
-        now = self._now()
-        chunk = self._build_chunk(item_id, request, now)
-        self._items[item_id] = item.model_copy(
-            update={"chunks": [*item.chunks, chunk], "updated_at": now},
-        )
-        return chunk
+        with session_scope() as session:
+            item = self._get_model(session, item_id)
+            if item is None:
+                raise KnowledgeItemNotFoundError(item_id)
+            chunk = self._build_chunk_model(item_id, request)
+            item.chunks.append(chunk)
+            item.updated_at = datetime.now(UTC)
+            session.flush()
+            session.refresh(chunk)
+            return self._to_chunk_response(chunk)
 
     def add_source(
         self,
         item_id: str,
         request: KnowledgeSourceCreate,
     ) -> KnowledgeSourceResponse:
-        item = self.get_item(item_id)
-        now = self._now()
-        source = self._build_source(item_id, request, now)
-        self._items[item_id] = item.model_copy(
-            update={"sources": [*item.sources, source], "updated_at": now},
-        )
-        return source
+        with session_scope() as session:
+            item = self._get_model(session, item_id)
+            if item is None:
+                raise KnowledgeItemNotFoundError(item_id)
+            source = self._build_source_model(item_id, request)
+            item.sources.append(source)
+            item.updated_at = datetime.now(UTC)
+            session.flush()
+            session.refresh(source)
+            return self._to_source_response(source)
 
     def list_items(
         self,
@@ -94,50 +105,52 @@ class KnowledgeStore:
         min_quality_score: float | None = None,
         limit: int = 50,
     ) -> list[KnowledgeItemResponse]:
-        normalized_tags = set(self._normalize_tags(tags or []))
-        items = sorted(self._items.values(), key=lambda item: item.updated_at, reverse=True)
-        filtered = [
-            item
-            for item in items
-            if self._matches_item(
-                item,
-                task_type=task_type,
-                status=status,
-                source_type=source_type,
-                tags=normalized_tags,
-                query=query,
-                min_quality_score=min_quality_score,
+        normalized_tags = self._normalize_tags(tags or [])
+        with session_scope() as session:
+            statement = (
+                select(KnowledgeItemModel)
+                .options(
+                    joinedload(KnowledgeItemModel.sources),
+                    joinedload(KnowledgeItemModel.chunks),
+                )
+                .order_by(KnowledgeItemModel.updated_at.desc())
             )
-        ]
-        return filtered[:limit]
+            if task_type:
+                statement = statement.where(KnowledgeItemModel.task_type == task_type)
+            if status:
+                statement = statement.where(KnowledgeItemModel.status == status)
+            if source_type:
+                statement = statement.where(KnowledgeItemModel.source_type == source_type)
+            if normalized_tags:
+                statement = statement.where(KnowledgeItemModel.tags.contains(normalized_tags))
+            if min_quality_score is not None:
+                statement = statement.where(
+                    KnowledgeItemModel.quality_score.is_not(None),
+                    KnowledgeItemModel.quality_score >= min_quality_score,
+                )
 
-    def _matches_item(
-        self,
-        item: KnowledgeItemResponse,
-        *,
-        task_type: str | None,
-        status: KnowledgeStatus | None,
-        source_type: SourceType | None,
-        tags: set[str],
-        query: str | None,
-        min_quality_score: float | None,
-    ) -> bool:
-        if task_type and item.task_type != task_type:
-            return False
-        if status and item.status != status:
-            return False
-        if source_type and item.source_type != source_type:
-            return False
-        if tags and not tags.issubset(set(item.tags)):
-            return False
-        if min_quality_score is not None:
-            if item.quality_score is None or item.quality_score < min_quality_score:
-                return False
-        if query and not self._matches_query(item, query):
-            return False
-        return True
+            items = session.execute(statement).unique().scalars().all()
+            filtered = [item for item in items if self._matches_query(item, query)]
+            return [self._to_item_response(item) for item in filtered[:limit]]
 
-    def _matches_query(self, item: KnowledgeItemResponse, query: str) -> bool:
+    @staticmethod
+    def _get_model(session: Session, item_id: str) -> KnowledgeItemModel | None:
+        return (
+            session.execute(
+                select(KnowledgeItemModel)
+                .options(
+                    joinedload(KnowledgeItemModel.sources),
+                    joinedload(KnowledgeItemModel.chunks),
+                )
+                .where(KnowledgeItemModel.id == item_id)
+            )
+            .unique()
+            .scalar_one_or_none()
+        )
+
+    def _matches_query(self, item: KnowledgeItemModel, query: str | None) -> bool:
+        if not query:
+            return True
         needle = query.casefold()
         searchable = [
             item.title,
@@ -151,46 +164,87 @@ class KnowledgeStore:
         ]
         return any(needle in value.casefold() for value in searchable)
 
-    def _build_chunk(
+    def _build_chunk_model(
         self,
         item_id: str,
         request: KnowledgeChunkCreate,
-        created_at: datetime,
-    ) -> KnowledgeChunkResponse:
-        return KnowledgeChunkResponse(
+    ) -> KnowledgeChunkModel:
+        token_count = (
+            request.token_count if request.token_count is not None else len(request.text.split())
+        )
+        return KnowledgeChunkModel(
             id=str(uuid4()),
             item_id=item_id,
             text=request.text,
             ordinal=request.ordinal,
-            token_count=request.token_count
-            if request.token_count is not None
-            else len(request.text.split()),
+            token_count=token_count,
             source_refs=request.source_refs,
-            metadata=request.metadata,
+            chunk_metadata=request.metadata,
             embedding=request.embedding,
-            created_at=created_at,
         )
 
-    def _build_source(
-        self,
+    @staticmethod
+    def _build_source_model(
         item_id: str,
         request: KnowledgeSourceCreate,
-        created_at: datetime,
-    ) -> KnowledgeSourceResponse:
-        return KnowledgeSourceResponse(
+    ) -> KnowledgeSourceModel:
+        return KnowledgeSourceModel(
             id=str(uuid4()),
             item_id=item_id,
             source_type=request.source_type,
             title=request.title,
             uri=request.uri,
             summary=request.summary,
-            metadata=request.metadata,
-            created_at=created_at,
+            source_metadata=request.metadata,
         )
 
-    def _normalize_tags(self, tags: Sequence[str]) -> list[str]:
+    @staticmethod
+    def _normalize_tags(tags: Sequence[str]) -> list[str]:
         normalized = [tag.strip().casefold() for tag in tags if tag.strip()]
         return list(dict.fromkeys(normalized))
 
-    def _now(self) -> datetime:
-        return datetime.now(tz=UTC)
+    def _to_item_response(self, item: KnowledgeItemModel) -> KnowledgeItemResponse:
+        return KnowledgeItemResponse(
+            id=item.id,
+            title=item.title,
+            summary=item.summary,
+            task_type=item.task_type,
+            source_type=item.source_type,
+            status=item.status,
+            quality_score=item.quality_score,
+            tags=item.tags,
+            metadata=item.item_metadata,
+            embedding_model=item.embedding_model,
+            embedding=item.embedding,
+            sources=[self._to_source_response(source) for source in item.sources],
+            chunks=[self._to_chunk_response(chunk) for chunk in item.chunks],
+            created_at=item.created_at,
+            updated_at=item.updated_at,
+        )
+
+    @staticmethod
+    def _to_chunk_response(chunk: KnowledgeChunkModel) -> KnowledgeChunkResponse:
+        return KnowledgeChunkResponse(
+            id=chunk.id,
+            item_id=chunk.item_id,
+            text=chunk.text,
+            ordinal=chunk.ordinal,
+            token_count=chunk.token_count,
+            source_refs=chunk.source_refs,
+            metadata=chunk.chunk_metadata,
+            embedding=chunk.embedding,
+            created_at=chunk.created_at,
+        )
+
+    @staticmethod
+    def _to_source_response(source: KnowledgeSourceModel) -> KnowledgeSourceResponse:
+        return KnowledgeSourceResponse(
+            id=source.id,
+            item_id=source.item_id,
+            source_type=source.source_type,
+            title=source.title,
+            uri=source.uri,
+            summary=source.summary,
+            metadata=source.source_metadata,
+            created_at=source.created_at,
+        )
