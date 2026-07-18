@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from app.context_engine import KnowledgeContext
 from app.schemas.execution import AgentExecutionRequest, AgentExecutionStep
 from app.services.prompt_registry import PromptRegistry, build_template_values
 
@@ -22,6 +23,7 @@ class PromptBuilder:
         agent: AgentDefinition,
         executor: str,
         plan: list[AgentExecutionStep],
+        knowledge_context: KnowledgeContext | None = None,
     ) -> str:
         template = self.registry.resolve(
             template_id=request.template,
@@ -55,6 +57,10 @@ class PromptBuilder:
         lines.extend(f"{index}. {step.name}: {step.detail}" for index, step in enumerate(plan, 1))
         if request.input:
             lines.extend(["", f"Input keys: {', '.join(sorted(request.input.keys()))}"])
+        if knowledge_context:
+            prompt_section = knowledge_context.to_prompt_section()
+            if prompt_section:
+                lines.extend(["", prompt_section])
         if missing_variables:
             lines.extend(["", f"Missing template variables: {', '.join(missing_variables)}"])
         return "\n".join(lines)

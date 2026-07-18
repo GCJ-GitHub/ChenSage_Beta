@@ -15,7 +15,7 @@ def _create_item(client, *, title: str = "Pytest high quality content example") 
             "source_type": "generated_content",
             "status": "active",
             "quality_score": 0.88,
-            "tags": ["Content", "Stage4", "Style"],
+            "tags": ["Content", "Stage4", "Style", "Pytest"],
             "metadata": {"owner": "local"},
             "sources": [
                 {
@@ -43,7 +43,7 @@ def test_create_item_with_chunks_and_sources(client) -> None:
 
     assert item["id"]
     assert item["status"] == "active"
-    assert item["tags"] == ["content", "stage4", "style"]
+    assert item["tags"] == ["content", "stage4", "style", "pytest"]
     assert item["sources"][0]["source_type"] == "task_result"
     assert item["chunks"][0]["token_count"] > 0
     assert item["embedding"] is None
@@ -59,12 +59,12 @@ def test_list_items_filters_by_task_type_status_tag_and_quality(client) -> None:
             "source_type": "manual",
             "status": "draft",
             "quality_score": 0.2,
-            "tags": ["stage4"],
+            "tags": ["stage4", "pytest"],
         },
     )
 
     response = client.get(
-        "/knowledge-items?task_type=content&status=active&tag=stage4&min_quality_score=0.8",
+        "/knowledge-items?task_type=content&status=active&tag=pytest&min_quality_score=0.8",
     )
 
     assert response.status_code == 200

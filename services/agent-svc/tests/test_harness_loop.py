@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.context_engine import KnowledgeContext
 from app.harness import AgentDefinition, AgentHarness
 from app.schemas.execution import AgentExecutionRequest, AgentExecutionStep
 
@@ -18,8 +19,16 @@ class FakeModelClient:
         }
 
 
+class EmptyContextEngine:
+    def retrieve(self, request: AgentExecutionRequest) -> KnowledgeContext:
+        return KnowledgeContext(task_type=request.task_type)
+
+
 def test_agent_harness_returns_plan_act_observe_finalize_trace() -> None:
-    harness = AgentHarness(model_client=FakeModelClient())
+    harness = AgentHarness(
+        model_client=FakeModelClient(),
+        context_engine=EmptyContextEngine(),
+    )
     response = harness.run(
         request=AgentExecutionRequest(
             task_id="pytest-harness",
@@ -41,10 +50,12 @@ def test_agent_harness_returns_plan_act_observe_finalize_trace() -> None:
         "observe",
         "act",
         "observe",
+        "observe",
         "act",
         "observe",
         "finalize",
     ]
+    assert response.trace[5].name == "context.knowledge_retrieved"
     assert response.result.duration_ms == sum(step.duration_ms for step in response.trace)
     assert response.result.trace == response.trace
     assert response.events == response.trace

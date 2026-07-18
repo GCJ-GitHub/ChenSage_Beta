@@ -40,8 +40,26 @@ def test_execute_task_uses_registered_executor(
     assert response.trace
     assert response.trace[0].phase == "plan"
     assert response.trace[-1].phase == "finalize"
+    assert any(step.name == "context.knowledge_retrieved" for step in response.trace)
     assert response.result.provider == "fake-model-svc"
     assert response.result.usage["total_tokens"] > 0
+
+
+def test_execute_task_injects_knowledge_context_into_prompt_and_artifacts() -> None:
+    response = execute_task(
+        AgentExecutionRequest(
+            task_id="pytest-knowledge-context",
+            task_type="content_generation",
+            goal="Use retrieved knowledge while drafting.",
+        )
+    )
+
+    assert "Knowledge context:" in response.result.markdown
+    assert "Fake content knowledge" in response.result.markdown
+    assert "Use a concise structure and keep source references visible." in response.result.markdown
+    assert response.result.artifacts[0]["type"] == "knowledge_context"
+    assert response.result.artifacts[0]["task_type"] == "content"
+    assert response.result.artifacts[0]["item_count"] == 1
 
 
 @pytest.mark.parametrize(

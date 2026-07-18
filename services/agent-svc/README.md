@@ -59,6 +59,14 @@ GET /prompt-templates/{template_id}
 任务类型和输出格式后再交给 `model-svc`。如果某个任务类型暂时没有专属模板，会回落到
 `generic.default`，保证未知任务和后续功能原型不会因为模板缺失而中断。
 
+阶段 4 起，`agent-svc` 内置最小 `context-engine`：
+
+- 执行前按 `task_type` 归一化为 `content`、`research`、`arxiv`、`interview` 或 `file`。
+- 通过 `knowledge-base-svc` 的 `/knowledge-items/search` 检索 active 知识条目。
+- 将知识标题、摘要、片段和来源注入 Prompt。
+- 将检索事件写入 trace，并把来源摘要写入 result artifacts。
+- 如果 `knowledge-base-svc` 暂不可用，任务继续执行，trace 记录 `context.knowledge_unavailable`。
+
 Run tests:
 
 ```bash

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.context_engine import KnowledgeContextEngine
 from app.loop_engine import DeterministicLoopEngine
 from app.schemas.execution import (
     AgentExecutionRequest,
@@ -27,10 +28,12 @@ class AgentHarness:
         loop_engine: DeterministicLoopEngine | None = None,
         model_client: ModelClientProtocol | None = None,
         prompt_builder: PromptBuilder | None = None,
+        context_engine: KnowledgeContextEngine | None = None,
     ) -> None:
         self.loop_engine = loop_engine or DeterministicLoopEngine()
         self.model_client = model_client or HttpModelClient()
         self.prompt_builder = prompt_builder or PromptBuilder()
+        self.context_engine = context_engine or KnowledgeContextEngine()
 
     def run(
         self,
@@ -41,11 +44,13 @@ class AgentHarness:
         plan: list[AgentExecutionStep],
     ) -> AgentExecutionResponse:
         loop = self.loop_engine.run(agent_name=agent.name, request=request, plan=plan)
+        knowledge_context = self.context_engine.retrieve(request)
         prompt = self.prompt_builder.build(
             request=request,
             agent=agent,
             executor=executor,
             plan=plan,
+            knowledge_context=knowledge_context,
         )
         model_response = self.model_client.generate(
             request=request,
@@ -70,8 +75,13 @@ class AgentHarness:
                 data={"usage": model_response.get("usage", {})},
             ),
         ]
-        trace = [*loop.trace[:-1], *model_events, loop.trace[-1]]
+        context_event = knowledge_context.to_trace_step()
+        trace = [*loop.trace[:-1], context_event, *model_events, loop.trace[-1]]
         duration_ms = sum(step.duration_ms for step in trace)
+        artifacts = []
+        context_artifact = knowledge_context.to_artifact()
+        if context_artifact:
+            artifacts.append(context_artifact)
         result = AgentExecutionResult(
             format=request.output_format or "Markdown",
             markdown=str(model_response["markdown"]),
@@ -84,6 +94,7 @@ class AgentHarness:
             provider=str(model_response.get("provider") or ""),
             model=str(model_response.get("model") or ""),
             usage=dict(model_response.get("usage") or {}),
+            artifacts=artifacts,
         )
         return AgentExecutionResponse(
             task_id=request.task_id,

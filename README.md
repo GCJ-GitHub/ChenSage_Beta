@@ -430,6 +430,7 @@ services/*/config/             服务自己的配置读取边界
   API 加载并在任务执行时渲染；后续复杂后再考虑拆 `prompt-svc`。
 - 知识库阶段由 `knowledge-base-svc` 提供 PostgreSQL 持久化 API：`/knowledge-items`
   支持创建、筛选和读取知识条目，`/knowledge-items/search` 支持按任务类型、标签、质量分和关键词检索；embedding 字段已预留给后续 pgvector 语义检索实现。
+- `agent-svc` 的最小 `context-engine` 会在执行前按任务类型检索 active 知识条目，将知识片段和来源注入 Prompt，并把检索记录写入 trace / artifacts。
 
 ## 推荐落地路线
 
