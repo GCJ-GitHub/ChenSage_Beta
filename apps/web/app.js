@@ -1,6 +1,7 @@
 const TASK_API_BASE_URL = window.CHENSAGE_TASK_API_URL || "http://localhost:8011";
 const MODEL_API_BASE_URL = window.CHENSAGE_MODEL_API_URL || "http://localhost:8012";
 const AGENT_API_BASE_URL = window.CHENSAGE_AGENT_API_URL || "http://localhost:8013";
+const KNOWLEDGE_API_BASE_URL = window.CHENSAGE_KNOWLEDGE_API_URL || "http://localhost:8014";
 
 const taskPlans = {
   content: [
@@ -94,11 +95,16 @@ const modelApiKey = document.querySelector("#model-api-key");
 const modelSettingsStatus = document.querySelector("#model-settings-status");
 const testModelProviderButton = document.querySelector("#test-model-provider");
 const saveModelProviderButton = document.querySelector("#save-model-provider");
+const knowledgeStatus = document.querySelector("#knowledge-status");
+const knowledgeCurrentType = document.querySelector("#knowledge-current-type");
+const knowledgeTotal = document.querySelector("#knowledge-total");
+const knowledgeList = document.querySelector("#knowledge-list");
 
 let tasks = [];
 let selectedTaskId = null;
 let pollHandle = null;
 let modelProvider = null;
+let knowledgeItems = [];
 const promptTemplateCache = new Map();
 
 function escapeHtml(value) {
@@ -166,7 +172,7 @@ function renderMetrics() {
 function renderTasks() {
   renderMetrics();
   if (tasks.length === 0) {
-    taskTableBody.innerHTML = '<tr><td colspan="5">还没有任务，创建一个阶段 1 stub 任务试试。</td></tr>';
+    taskTableBody.innerHTML = '<tr><td colspan="5">还没有任务，创建一个 Agent 任务试试。</td></tr>';
     return;
   }
 
@@ -336,6 +342,75 @@ async function fetchModelProvider() {
   }
 }
 
+function formatQualityScore(score) {
+  if (score === null || score === undefined) {
+    return "未评分";
+  }
+  return `${Math.round(score * 100)} 分`;
+}
+
+function renderKnowledgeItems() {
+  knowledgeCurrentType.textContent = typeLabels[taskType.value] || taskType.value;
+  knowledgeTotal.textContent = knowledgeItems.length;
+  if (knowledgeItems.length === 0) {
+    knowledgeList.innerHTML = '<p class="empty-state">当前任务类型还没有知识条目。</p>';
+    return;
+  }
+
+  knowledgeList.innerHTML = knowledgeItems
+    .map((item) => {
+      const sources = item.sources
+        .slice(0, 2)
+        .map((source) => `<span>${escapeHtml(source.title || source.source_type)}</span>`)
+        .join("");
+      const tags = item.tags
+        .slice(0, 4)
+        .map((tag) => `<span>${escapeHtml(tag)}</span>`)
+        .join("");
+      return `
+        <article class="knowledge-item">
+          <div class="knowledge-item-heading">
+            <div>
+              <strong>${escapeHtml(item.title)}</strong>
+              <p>${escapeHtml(item.summary || "暂无摘要。")}</p>
+            </div>
+            <span class="state success">${escapeHtml(formatQualityScore(item.quality_score))}</span>
+          </div>
+          <div class="knowledge-meta">
+            <span>${escapeHtml(item.status)}</span>
+            <span>${escapeHtml(item.source_type)}</span>
+            ${tags}
+          </div>
+          <div class="source-list">${sources || "<span>暂无来源</span>"}</div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function fetchKnowledgeItems({ silent = false } = {}) {
+  const params = new URLSearchParams({
+    task_type: taskType.value,
+    limit: "6",
+  });
+  try {
+    const response = await fetch(`${KNOWLEDGE_API_BASE_URL}/knowledge-items?${params}`);
+    if (!response.ok) {
+      throw new Error(`knowledge-base-svc returned ${response.status}`);
+    }
+    knowledgeItems = await response.json();
+    renderKnowledgeItems();
+    if (!silent) {
+      knowledgeStatus.textContent = `已连接：${KNOWLEDGE_API_BASE_URL}`;
+    }
+  } catch (error) {
+    knowledgeItems = [];
+    renderKnowledgeItems();
+    knowledgeStatus.textContent = "知识库服务未启动";
+    knowledgeList.innerHTML = `<p class="empty-state">无法连接 knowledge-base-svc：${escapeHtml(error.message)}</p>`;
+  }
+}
+
 async function saveModelProvider(event) {
   event.preventDefault();
   saveModelProviderButton.disabled = true;
@@ -441,6 +516,7 @@ taskType.addEventListener("change", (event) => {
   renderPlan(type);
   setActiveFeature(type);
   loadPromptTemplates(type);
+  fetchKnowledgeItems({ silent: true });
 });
 
 taskForm.addEventListener("submit", createTask);
@@ -458,6 +534,8 @@ featureCards.forEach((card) => {
     taskType.value = type;
     renderPlan(type);
     setActiveFeature(type);
+    loadPromptTemplates(type);
+    fetchKnowledgeItems({ silent: true });
     taskGoal.focus();
   });
 });
@@ -477,9 +555,15 @@ navItems.forEach((item) => {
     if (type === "prompt") {
       taskTemplate.scrollIntoView({ behavior: "smooth", block: "center" });
     }
+    if (type === "knowledge") {
+      document
+        .querySelector("#knowledge-panel")
+        .scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   });
 });
 
 fetchTasks();
 fetchModelProvider();
+fetchKnowledgeItems();
 loadPromptTemplates(taskType.value);

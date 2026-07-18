@@ -54,5 +54,7 @@ jobs:
         run: python -m pytest services/model-svc/tests
       - name: Agent svc tests
         run: python -m pytest services/agent-svc/tests
+      - name: Knowledge base svc tests
+        run: python -m pytest services/knowledge-base-svc/tests
       - name: Agent worker tests
         run: python -m pytest workers/agent-worker/tests

@@ -25,6 +25,7 @@
           <button class="nav-item" type="button" data-section="arxiv">arXiv 日报</button>
           <button class="nav-item" type="button" data-section="model">模型设置</button>
           <button class="nav-item" type="button" data-section="prompt">提示词模板</button>
+          <button class="nav-item" type="button" data-section="knowledge">知识库</button>
           <button class="nav-item" type="button" data-section="file">文件管理</button>
         </nav>
 
@@ -127,7 +128,7 @@
                 </div>
                 <button class="primary-button" type="submit" id="create-task">创建任务</button>
               </div>
-              <p class="inline-status" id="composer-status">连接 task-svc 后可创建阶段 1 stub 任务。</p>
+              <p class="inline-status" id="composer-status">连接 task-svc 后可创建 Agent 任务。</p>
             </form>
           </section>
 
@@ -194,6 +195,32 @@
             <h3>arXiv 日报</h3>
             <p>研究方向、关键词、分类、收藏论文和范围日报。</p>
           </article>
+        </section>
+
+        <section class="knowledge-panel" id="knowledge-panel" aria-labelledby="knowledge-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Knowledge Base</p>
+              <h2 id="knowledge-title">知识库来源</h2>
+            </div>
+            <span class="status-pill cool" id="knowledge-status">knowledge-base-svc</span>
+          </div>
+
+          <div class="knowledge-layout">
+            <div class="knowledge-stats" aria-label="知识库统计">
+              <div class="knowledge-stat">
+                <span>当前类型</span>
+                <strong id="knowledge-current-type">内容创作</strong>
+              </div>
+              <div class="knowledge-stat">
+                <span>匹配条目</span>
+                <strong id="knowledge-total">0</strong>
+              </div>
+            </div>
+            <div class="knowledge-list" id="knowledge-list">
+              <p class="empty-state">正在连接 knowledge-base-svc...</p>
+            </div>
+          </div>
         </section>
 
         <section class="lower-grid">

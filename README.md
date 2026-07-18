@@ -32,6 +32,7 @@ make migrate-task-svc
 make test-task-svc
 make test-model-svc
 make test-agent-svc
+make test-knowledge-base-svc
 make test-agent-worker
 make check-stage0
 make compile-services
@@ -49,12 +50,13 @@ docker compose --env-file infra/docker/.env -f infra/docker/docker-compose.yml u
 .\.venv\Scripts\python.exe -m pytest services/task-svc/tests
 .\.venv\Scripts\python.exe -m pytest services/model-svc/tests
 .\.venv\Scripts\python.exe -m pytest services/agent-svc/tests
+.\.venv\Scripts\python.exe -m pytest services/knowledge-base-svc/tests
 .\.venv\Scripts\python.exe -m pytest workers/agent-worker/tests
 .\.venv\Scripts\python.exe scripts/check_stage0.py
 .\.venv\Scripts\python.exe -m compileall services workers packages scripts
 ```
 
-Stage 1 local task loop:
+Stage 1-4 local task loop:
 
 ```bash
 make dev-stage1
@@ -62,7 +64,8 @@ make dev-stage1
 
 This starts Docker Compose dependencies, runs task-svc migrations, then starts
 task-svc on `http://127.0.0.1:8011`, model-svc on `http://127.0.0.1:8012`,
-agent-svc on `http://127.0.0.1:8013`, and the `agent-worker` consumer.
+agent-svc on `http://127.0.0.1:8013`, knowledge-base-svc on
+`http://127.0.0.1:8014`, and the `agent-worker` consumer.
 
 常用本地服务入口：
 
@@ -72,6 +75,7 @@ agent-svc on `http://127.0.0.1:8013`, and the `agent-worker` consumer.
 | `make run-task-svc` | 启动任务服务，默认 `http://localhost:8011` |
 | `make run-model-svc` | 启动模型配置服务，默认 `http://localhost:8012` |
 | `make run-agent-svc` | 启动 Agent 编排服务，默认 `http://localhost:8013` |
+| `make run-knowledge-base-svc` | 启动知识库服务，默认 `http://localhost:8014` |
 | `make run-agent-worker` | 启动阶段 0 worker 占位入口 |
 
 真实 `.env` 不进入 Git。大模型 API Key 只通过 `model-svc` 的配置边界读取。
@@ -422,6 +426,8 @@ services/*/config/             服务自己的配置读取边界
 - OpenAI-compatible API 的 base URL、API Key、默认模型通过环境变量或模型设置页交给 `model-svc` 管理；API Key 只接收、不回显完整值。
 - 提示词模板先放在 `config/prompts/`，由 `agent-svc` 的 `/prompt-templates`
   API 加载并在任务执行时渲染；后续复杂后再考虑拆 `prompt-svc`。
+- 知识库阶段先由 `knowledge-base-svc` 提供进程内存储的最小 API：`/knowledge-items`
+  支持创建、筛选和读取知识条目，`/knowledge-items/search` 支持按任务类型、标签、质量分和关键词检索；embedding 字段已预留给后续 PostgreSQL + pgvector 持久化实现。
 
 ## 推荐落地路线
 

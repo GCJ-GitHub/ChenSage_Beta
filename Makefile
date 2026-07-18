@@ -2,7 +2,7 @@ PYTHON ?= python3
 DOCKER_COMPOSE ?= docker compose
 DOCKER_COMPOSE_FILE ?= infra/docker/docker-compose.yml
 
-.PHONY: help setup-env setup-python infra-up infra-down infra-ps migrate-task-svc test-task-svc test-model-svc test-agent-svc test-agent-worker check-stage0 check-stage1 compile-services run-gateway run-task-svc run-model-svc run-agent-svc run-agent-worker dev-task-svc dev-model-svc dev-agent-svc dev-agent-worker dev-stage1
+.PHONY: help setup-env setup-python infra-up infra-down infra-ps migrate-task-svc test-task-svc test-model-svc test-agent-svc test-knowledge-base-svc test-agent-worker check-stage0 check-stage1 compile-services run-gateway run-task-svc run-model-svc run-agent-svc run-knowledge-base-svc run-agent-worker dev-task-svc dev-model-svc dev-agent-svc dev-knowledge-base-svc dev-agent-worker dev-stage1
 
 help:
 	@echo "ChenSage AgentOS development commands"
@@ -13,9 +13,10 @@ help:
 	@echo "  make test-task-svc    Run task-svc API and PostgreSQL store tests"
 	@echo "  make test-model-svc   Run model-svc provider config and generation tests"
 	@echo "  make test-agent-svc   Run agent-svc orchestrator tests"
+	@echo "  make test-knowledge-base-svc Run knowledge-base-svc API tests"
 	@echo "  make test-agent-worker Run agent-worker boundary tests"
-	@echo "  make check-stage1     Run stage 1 checks"
-	@echo "  make dev-stage1       Start infra, migrate, task-svc and agent-worker"
+	@echo "  make check-stage1     Run current local stack checks"
+	@echo "  make dev-stage1       Start infra, migrate and local phase 1-4 services"
 	@echo "  make infra-down       Stop local infrastructure"
 	@echo "  make infra-ps         Show local infrastructure status"
 	@echo "  make check-stage0     Verify phase 0 project skeleton"
@@ -49,13 +50,16 @@ test-model-svc:
 test-agent-svc:
 	$(PYTHON) -m pytest services/agent-svc/tests
 
+test-knowledge-base-svc:
+	$(PYTHON) -m pytest services/knowledge-base-svc/tests
+
 test-agent-worker:
 	$(PYTHON) -m pytest workers/agent-worker/tests
 
 check-stage0:
 	$(PYTHON) scripts/check_stage0.py
 
-check-stage1: check-stage0 migrate-task-svc test-task-svc test-model-svc test-agent-svc test-agent-worker compile-services
+check-stage1: check-stage0 migrate-task-svc test-task-svc test-model-svc test-agent-svc test-knowledge-base-svc test-agent-worker compile-services
 
 compile-services:
 	$(PYTHON) -m compileall services workers packages scripts
@@ -77,6 +81,11 @@ run-agent-svc:
 	uvicorn app.main:app --app-dir services/agent-svc --host 0.0.0.0 --port 8013 --reload
 
 dev-agent-svc: run-agent-svc
+
+run-knowledge-base-svc:
+	uvicorn app.main:app --app-dir services/knowledge-base-svc --host 0.0.0.0 --port 8014 --reload
+
+dev-knowledge-base-svc: run-knowledge-base-svc
 
 run-agent-worker:
 	$(PYTHON) workers/agent-worker/app/main.py

@@ -239,6 +239,7 @@ h3 {
 .task-composer,
 .task-preview,
 .feature-card,
+.knowledge-panel,
 .task-table-section,
 .config-panel {
   border: 1px solid var(--line);
@@ -310,6 +311,11 @@ h3 {
 .status-pill.warm {
   color: var(--gold);
   background: var(--gold-soft);
+}
+
+.status-pill.cool {
+  color: var(--blue);
+  background: var(--blue-soft);
 }
 
 .composer-form {
@@ -455,6 +461,84 @@ textarea {
   margin-bottom: 0;
   font-size: 14px;
   line-height: 1.65;
+}
+
+.knowledge-panel {
+  margin-bottom: 18px;
+  padding: 18px;
+}
+
+.knowledge-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.knowledge-stats,
+.knowledge-list {
+  display: grid;
+  gap: 10px;
+}
+
+.knowledge-stat,
+.knowledge-item {
+  border: 1px solid #e4e8e4;
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.knowledge-stat {
+  padding: 13px;
+}
+
+.knowledge-stat span,
+.knowledge-meta,
+.source-list {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.knowledge-stat strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 18px;
+}
+
+.knowledge-item {
+  padding: 14px;
+}
+
+.knowledge-item-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.knowledge-item-heading p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.knowledge-meta,
+.source-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.knowledge-meta span,
+.source-list span {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e3e7e3;
 }
 
 .lower-grid {
@@ -687,6 +771,7 @@ th {
 
   .main-grid,
   .lower-grid,
+  .knowledge-layout,
   .detail-grid {
     grid-template-columns: 1fr;
   }

@@ -25,6 +25,20 @@ learning_candidates
 prompt_optimization_suggestions
 ```
 
+当前最小 API：
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/knowledge-items` | 按 `task_type`、`status`、`source_type`、`tag`、`query`、`min_quality_score` 筛选知识条目 |
+| `POST` | `/knowledge-items` | 创建知识条目，可同时带 chunks 和 sources |
+| `POST` | `/knowledge-items/search` | 面向 context-engine 的结构化检索入口 |
+| `GET` | `/knowledge-items/{item_id}` | 读取知识条目详情 |
+| `POST` | `/knowledge-items/{item_id}/chunks` | 追加知识片段 |
+| `POST` | `/knowledge-items/{item_id}/sources` | 追加资料来源 |
+
+阶段 4 先使用进程内存储，目的是稳定服务边界和前端引用展示；后续会替换为
+PostgreSQL + pgvector，并把 `embedding` / `embedding_model` 字段接入语义检索。
+
 边界：
 
 - 不保存模型 Provider Secret。
