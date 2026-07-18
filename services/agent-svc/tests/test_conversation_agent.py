@@ -45,6 +45,7 @@ def test_conversation_agent_identifies_content_generation() -> None:
     assert response.task.task_type == "content_generation"
     assert response.task.template == "content.default"
     assert response.task.input["content_type"] == "公众号文章"
+    assert response.task.input["length"] == "未指定"
     assert response.template.name == "通用内容创作"
     assert response.knowledge_sources[0].id == "conversation-knowledge"
 
@@ -57,7 +58,9 @@ def test_conversation_agent_identifies_content_rewrite() -> None:
     )
 
     assert response.task.task_type == "content_rewrite"
+    assert response.task.template == "content.rewrite"
     assert response.task.input["generated_content"].startswith("帮我改写")
+    assert response.task.input["rewrite_instruction"].startswith("帮我改写")
     assert response.confidence >= 0.8
 
 
@@ -71,6 +74,7 @@ def test_conversation_agent_prefers_standup_template() -> None:
     assert response.task.task_type == "content_generation"
     assert response.task.template == "content.standup_script"
     assert response.task.input["content_type"] == "脱口秀 / 单口喜剧稿"
+    assert "3 分钟" in response.task.input["length"]
 
 
 def test_conversation_interpret_api(client) -> None:

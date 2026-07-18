@@ -57,9 +57,63 @@ def test_execute_task_injects_knowledge_context_into_prompt_and_artifacts() -> N
     assert "Knowledge context:" in response.result.markdown
     assert "Fake content knowledge" in response.result.markdown
     assert "Use a concise structure and keep source references visible." in response.result.markdown
-    assert response.result.artifacts[0]["type"] == "knowledge_context"
-    assert response.result.artifacts[0]["task_type"] == "content"
-    assert response.result.artifacts[0]["item_count"] == 1
+    knowledge_artifact = next(
+        artifact
+        for artifact in response.result.artifacts
+        if artifact["type"] == "knowledge_context"
+    )
+    assert knowledge_artifact["task_type"] == "content"
+    assert knowledge_artifact["item_count"] == 1
+
+
+def test_content_generation_includes_phase6_content_spec() -> None:
+    response = execute_task(
+        AgentExecutionRequest(
+            task_id="pytest-content-generation",
+            task_type="content_generation",
+            goal="写一篇公众号文章介绍阶段 6。",
+            input={
+                "content_type": "公众号文章",
+                "audience": "产品用户",
+                "tone": "清晰",
+                "length": "约 800 字",
+            },
+        )
+    )
+
+    assert response.executor == "content-executor"
+    assert response.result.steps[0].name == "content-agent.plan_outline"
+    artifact = response.result.artifacts[0]
+    assert artifact["type"] == "content_task_spec"
+    assert artifact["mode"] == "generation"
+    assert artifact["content_type"] == "公众号文章"
+    assert artifact["audience"] == "产品用户"
+    assert "期望长度：约 800 字" in response.result.markdown
+
+
+def test_content_rewrite_uses_rewrite_plan_and_artifact() -> None:
+    response = execute_task(
+        AgentExecutionRequest(
+            task_id="pytest-content-rewrite",
+            task_type="content_rewrite",
+            goal="把这段内容改得更清晰。",
+            input={
+                "content_type": "公众号文章",
+                "generated_content": "这是一段需要改写的原文。",
+                "rewrite_instruction": "保留原意，结构更清楚。",
+                "audience": "内部团队",
+                "tone": "专业",
+            },
+        )
+    )
+
+    assert response.result.steps[0].name == "content-agent.read_source"
+    assert response.result.steps[1].name == "content-agent.rewrite"
+    artifact = response.result.artifacts[0]
+    assert artifact["type"] == "content_task_spec"
+    assert artifact["mode"] == "rewrite"
+    assert artifact["source_text_preview"] == "这是一段需要改写的原文。"
+    assert "Template: content.rewrite" in response.result.markdown
 
 
 @pytest.mark.parametrize(

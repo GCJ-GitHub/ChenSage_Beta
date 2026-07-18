@@ -24,11 +24,63 @@ def test_deterministic_provider_returns_markdown_and_usage() -> None:
     )
 
     assert response.provider == "deterministic"
-    assert response.markdown.startswith("# content-agent Deterministic Output")
+    assert response.markdown.startswith("# 内容初稿")
+    assert "Prompt Snapshot" in response.markdown
     assert response.usage.prompt_tokens > 0
     assert response.usage.total_tokens == (
         response.usage.prompt_tokens + response.usage.completion_tokens
     )
+
+
+def test_deterministic_provider_returns_content_draft() -> None:
+    response = DeterministicModelProvider().generate(
+        ModelGenerateRequest(
+            task_id="pytest-content-draft",
+            agent="content-agent",
+            task_type="content_generation",
+            goal="介绍阶段 6 内容创作能力。",
+            prompt="Rendered content prompt.",
+            output_format="Markdown",
+            metadata={
+                "input": {
+                    "content_type": "公众号文章",
+                    "audience": "产品用户",
+                    "tone": "清晰",
+                    "length": "约 800 字",
+                }
+            },
+        )
+    )
+
+    assert response.markdown.startswith("# 公众号文章初稿")
+    assert "读者：产品用户 / 语气：清晰 / 长度：约 800 字" in response.markdown
+    assert response.summary == "content-agent generated deterministic content_generation draft."
+
+
+def test_deterministic_provider_returns_rewrite_draft() -> None:
+    response = DeterministicModelProvider().generate(
+        ModelGenerateRequest(
+            task_id="pytest-content-rewrite",
+            agent="content-agent",
+            task_type="content_rewrite",
+            goal="改写这段内容。",
+            prompt="Rendered rewrite prompt.",
+            output_format="Markdown",
+            metadata={
+                "input": {
+                    "content_type": "公众号文章",
+                    "generated_content": "原文需要更清晰的结构。",
+                    "rewrite_instruction": "保留原意，表达更专业。",
+                    "audience": "内部团队",
+                    "tone": "专业",
+                }
+            },
+        )
+    )
+
+    assert response.markdown.startswith("# 公众号文章改写稿")
+    assert "改写要求：保留原意，表达更专业。" in response.markdown
+    assert "原文需要更清晰的结构。" in response.markdown
 
 
 def test_internal_generate_endpoint(client) -> None:

@@ -77,6 +77,12 @@ POST /conversation/interpret
 选择内容创作或脱口秀稿模板，预取匹配知识库来源，返回澄清问题、模板选择、
 Agent 选择和可直接提交到 `task-svc` 的任务草稿。
 
+阶段 6 起，`content-agent` 的执行链路开始区分内容创作、内容改写和脱口秀稿：
+
+- 内容任务会归一化 `content_type`、`audience`、`tone`、`length`、`generated_content` 和 `rewrite_instruction`。
+- `content_generation` 默认使用 `content.default`，`content_rewrite` 默认使用 `content.rewrite`，脱口秀稿优先使用 `content.standup_script`。
+- 执行结果会写入 `content_task_spec` artifact，保留本次内容类型、受众、语气、长度和改写原文预览。
+
 Run tests:
 
 ```bash

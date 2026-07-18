@@ -1,0 +1,41 @@
+id: content.rewrite
+task_type: content_rewrite
+version: 0.1.0
+name: 内容改写
+variables:
+  generated_content:
+    type: string
+    required: true
+  rewrite_instruction:
+    type: string
+    required: true
+  content_type:
+    type: string
+    required: false
+  audience:
+    type: string
+    required: false
+  tone:
+    type: string
+    required: false
+  length:
+    type: string
+    required: false
+template: |
+  你是 ChenSage 的 content-agent，负责内容改写。
+  请根据改写要求处理原文，不改变核心事实和观点。
+
+  内容类型：{{ content_type }}
+  目标读者：{{ audience }}
+  语气风格：{{ tone }}
+  期望长度：{{ length }}
+  改写要求：{{ rewrite_instruction }}
+
+  原文：
+  {{ generated_content }}
+
+  要求：
+  - 保留原意，重组表达和结构。
+  - 去掉含混、重复和不必要的铺垫。
+  - 输出 Markdown。
+  - 最后列出 2 到 3 条本次改写的主要调整。

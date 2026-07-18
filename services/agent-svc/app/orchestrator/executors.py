@@ -12,6 +12,7 @@ from app.agents import (
     PLANNER_AGENT,
     RESEARCH_AGENT,
 )
+from app.content import build_content_plan, build_content_task_spec, content_task_artifact
 from app.harness import AgentDefinition, AgentHarness
 from app.schemas.execution import (
     AgentExecutionRequest,
@@ -32,17 +33,15 @@ def get_executor(task_type: str) -> TaskExecutor:
 
 
 def content_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:
-    steps = [
-        AgentExecutionStep(name="content-agent", detail="Read goal, template, and output format."),
-        AgentExecutionStep(name="critic-agent", detail="Prepare a later quality review pass."),
-        AgentExecutionStep(name="eval-svc", detail="Reserve structured feedback for phase 2."),
-    ]
-    return _response(
+    spec = build_content_task_spec(request)
+    response = _response(
         request,
         agent=CONTENT_AGENT,
         executor="content-executor",
-        steps=steps,
+        steps=build_content_plan(spec),
     )
+    response.result.artifacts.insert(0, content_task_artifact(spec))
+    return response
 
 
 def research_executor(request: AgentExecutionRequest) -> AgentExecutionResponse:

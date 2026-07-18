@@ -172,7 +172,8 @@
               <label>
                 <span>任务类型</span>
                 <select id="task-type">
-                  <option value="content">内容创作 / 改写</option>
+                  <option value="content_generation">内容创作</option>
+                  <option value="content_rewrite">内容改写</option>
                   <option value="interview">模拟面试</option>
                   <option value="research">信息搜集</option>
                   <option value="arxiv">arXiv 日报</option>
@@ -185,11 +186,69 @@
                 <textarea id="task-goal" rows="7">写一篇公众号文章，主题是 AgentOS 如何帮助个人知识工作者管理长期任务，语气清晰、克制、有专业感。</textarea>
               </label>
 
+              <section class="content-options" id="content-options" aria-label="内容创作参数">
+                <div class="form-row">
+                  <label>
+                    <span>内容类型</span>
+                    <select id="content-kind">
+                      <option>公众号文章</option>
+                      <option>小红书笔记</option>
+                      <option>知乎回答</option>
+                      <option>论文</option>
+                      <option>专利</option>
+                      <option>小说</option>
+                      <option>剧本</option>
+                      <option>歌词</option>
+                      <option>脱口秀 / 单口喜剧稿</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>目标读者</span>
+                    <input id="content-audience" type="text" value="个人知识工作者" />
+                  </label>
+                </div>
+                <div class="form-row">
+                  <label>
+                    <span>语气风格</span>
+                    <select id="content-tone">
+                      <option>清晰</option>
+                      <option>专业</option>
+                      <option>克制</option>
+                      <option>幽默</option>
+                      <option>有故事感</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>期望长度</span>
+                    <input id="content-length" type="text" value="约 800 字" />
+                  </label>
+                </div>
+                <div class="content-rewrite-group" id="content-rewrite-group" hidden>
+                  <label>
+                    <span>改写原文</span>
+                    <textarea
+                      id="content-source-text"
+                      rows="5"
+                      placeholder="粘贴需要改写的原文"
+                    ></textarea>
+                  </label>
+                  <label>
+                    <span>改写要求</span>
+                    <input
+                      id="content-rewrite-instruction"
+                      type="text"
+                      value="保留原意，结构更清晰，表达更专业"
+                    />
+                  </label>
+                </div>
+              </section>
+
               <div class="form-row">
                 <label>
                   <span>提示词模板</span>
                   <select id="task-template">
                     <option value="content.default">通用内容创作</option>
+                    <option value="content.rewrite">内容改写</option>
                     <option value="content.standup_script">脱口秀 / 单口喜剧稿</option>
                   </select>
                 </label>

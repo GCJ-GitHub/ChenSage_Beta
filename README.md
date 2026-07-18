@@ -58,7 +58,7 @@ docker compose --env-file infra/docker/.env -f infra/docker/docker-compose.yml u
 .\.venv\Scripts\python.exe -m compileall services workers packages scripts
 ```
 
-Stage 1-5 local task loop:
+Stage 1-6 local task loop:
 
 ```bash
 make dev-stage1
@@ -432,6 +432,7 @@ services/*/config/             服务自己的配置读取边界
   支持创建、筛选和读取知识条目，`/knowledge-items/search` 支持按任务类型、标签、质量分和关键词检索；embedding 字段已预留给后续 pgvector 语义检索实现。
 - `agent-svc` 的最小 `context-engine` 会在执行前按任务类型检索 active 知识条目，将知识片段和来源注入 Prompt，并把检索记录写入 trace / artifacts。
 - `agent-svc` 的 `/conversation/interpret` 提供阶段 5 对话式任务理解入口，会识别内容创作 / 改写目标、选择提示词模板、预取知识库来源，并返回可直接交给 `task-svc` 创建任务的草稿。
+- 阶段 6 起，内容创作 / 改写任务会携带内容类型、目标读者、语气、长度、改写原文和改写要求；`content-agent` 会输出内容任务参数 artifact，并在 deterministic provider 下返回可读的初稿或改写稿。
 
 ## 推荐落地路线
 

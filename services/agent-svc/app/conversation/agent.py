@@ -43,6 +43,7 @@ class ConversationAgent:
         content_type = _infer_content_type(message, task_type)
         tone = _infer_tone(message, content_type)
         audience = _infer_audience(message)
+        length = _infer_length(message)
         template = self.registry.resolve(
             template_id=_preferred_template(message),
             task_type=task_type,
@@ -52,10 +53,14 @@ class ConversationAgent:
             "content_type": content_type,
             "audience": audience,
             "tone": tone,
+            "length": length,
+            "set_length": length,
+            "topic": message,
             "conversation_message": message,
         }
         if task_type == "content_rewrite":
             task_input["generated_content"] = message
+            task_input["rewrite_instruction"] = message
 
         draft = ConversationTaskDraft(
             task_type=task_type,
@@ -165,6 +170,15 @@ def _infer_audience(message: str) -> str:
         return "招聘方"
     if "用户" in message:
         return "产品用户"
+    return "未指定"
+
+
+def _infer_length(message: str) -> str:
+    for marker in ("分钟", "字", "段", "页"):
+        index = message.find(marker)
+        if index > 0:
+            start = max(0, index - 8)
+            return message[start : index + len(marker)].strip("，。；、 ")
     return "未指定"
 
 

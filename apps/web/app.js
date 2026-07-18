@@ -71,6 +71,14 @@ const taskType = document.querySelector("#task-type");
 const taskGoal = document.querySelector("#task-goal");
 const taskTemplate = document.querySelector("#task-template");
 const taskOutputFormat = document.querySelector("#task-output-format");
+const contentOptions = document.querySelector("#content-options");
+const contentKind = document.querySelector("#content-kind");
+const contentAudience = document.querySelector("#content-audience");
+const contentTone = document.querySelector("#content-tone");
+const contentLength = document.querySelector("#content-length");
+const contentRewriteGroup = document.querySelector("#content-rewrite-group");
+const contentSourceText = document.querySelector("#content-source-text");
+const contentRewriteInstruction = document.querySelector("#content-rewrite-instruction");
 const taskForm = document.querySelector("#task-form");
 const planList = document.querySelector("#plan-list");
 const createButton = document.querySelector("#create-task");
@@ -148,6 +156,14 @@ function taskPlanKey(type) {
   return type;
 }
 
+function normalizedTaskType(type = taskType.value) {
+  return type === "content" ? "content_generation" : type;
+}
+
+function isContentTask(type = taskType.value) {
+  return taskPlanKey(normalizedTaskType(type)) === "content";
+}
+
 function knowledgeTaskTypeFor(type) {
   if (["content", "content_generation", "content_rewrite", "standup_script"].includes(type)) {
     return "content";
@@ -173,6 +189,78 @@ function ensureSelectOption(selectElement, value, label) {
     selectElement.appendChild(option);
   }
   selectElement.value = value;
+}
+
+function preferredContentTemplate(type = normalizedTaskType()) {
+  if (type === "content_rewrite") {
+    return ["content.rewrite", "内容改写"];
+  }
+  if (contentKind.value === "脱口秀 / 单口喜剧稿") {
+    return ["content.standup_script", "脱口秀 / 单口喜剧稿"];
+  }
+  return ["content.default", "通用内容创作"];
+}
+
+function syncContentControls() {
+  const type = normalizedTaskType();
+  const contentActive = isContentTask(type);
+  contentOptions.hidden = !contentActive;
+  contentRewriteGroup.hidden = type !== "content_rewrite";
+  if (contentActive) {
+    const [templateId, templateLabel] = preferredContentTemplate(type);
+    ensureSelectOption(taskTemplate, templateId, templateLabel);
+  }
+}
+
+function buildTaskInput(type) {
+  const input = {
+    source: "apps/web static prototype",
+    plan: taskPlans[taskPlanKey(type)],
+  };
+  if (!isContentTask(type)) {
+    return input;
+  }
+  const contentInput = {
+    content_type: contentKind.value,
+    audience: contentAudience.value.trim() || "未指定",
+    tone: contentTone.value.trim() || "清晰",
+    length: contentLength.value.trim() || "未指定",
+    set_length: contentLength.value.trim() || "未指定",
+    topic: taskGoal.value.trim(),
+    stage: "stage6-content-workflow",
+  };
+  if (type === "content_rewrite") {
+    contentInput.generated_content = contentSourceText.value.trim() || taskGoal.value.trim();
+    contentInput.rewrite_instruction =
+      contentRewriteInstruction.value.trim() || taskGoal.value.trim();
+  }
+  return { ...input, ...contentInput };
+}
+
+function applyContentFieldsFromInput(type, input) {
+  if (!isContentTask(type)) {
+    syncContentControls();
+    return;
+  }
+  if (input.content_type) {
+    ensureSelectOption(contentKind, input.content_type, input.content_type);
+  }
+  if (input.audience && input.audience !== "未指定") {
+    contentAudience.value = input.audience;
+  }
+  if (input.tone) {
+    ensureSelectOption(contentTone, input.tone, input.tone);
+  }
+  if (input.length || input.set_length) {
+    contentLength.value = input.length || input.set_length;
+  }
+  if (input.generated_content) {
+    contentSourceText.value = input.generated_content;
+  }
+  if (input.rewrite_instruction) {
+    contentRewriteInstruction.value = input.rewrite_instruction;
+  }
+  syncContentControls();
 }
 
 function renderPlan(type) {
@@ -523,6 +611,7 @@ function applyConversationDraft(result) {
   ensureSelectOption(taskTemplate, draft.template, result.template.name);
   taskGoal.value = draft.goal;
   taskOutputFormat.value = draft.output_format || "Markdown";
+  applyContentFieldsFromInput(draft.task_type, draft.input || {});
   renderPlan(draft.task_type);
   setActiveFeature(draft.task_type);
   loadPromptTemplates(draft.task_type);
@@ -658,6 +747,9 @@ async function testModelProvider() {
 
 async function createTask(event) {
   event.preventDefault();
+  const requestedTaskType = normalizedTaskType();
+  const [contentTemplateId] = preferredContentTemplate(requestedTaskType);
+  const template = isContentTask(requestedTaskType) ? contentTemplateId : taskTemplate.value;
   createButton.disabled = true;
   composerStatus.textContent = "正在创建任务并投递队列...";
   try {
@@ -665,14 +757,11 @@ async function createTask(event) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        task_type: taskType.value,
+        task_type: requestedTaskType,
         goal: taskGoal.value,
-        template: taskTemplate.value,
+        template,
         output_format: taskOutputFormat.value,
-        input: {
-          source: "apps/web static prototype",
-          plan: taskPlans[taskPlanKey(taskType.value)],
-        },
+        input: buildTaskInput(requestedTaskType),
       }),
     });
     if (!response.ok) {
@@ -701,13 +790,15 @@ function syncPolling() {
 }
 
 taskType.addEventListener("change", (event) => {
-  const type = event.target.value;
+  const type = normalizedTaskType(event.target.value);
+  syncContentControls();
   renderPlan(type);
   setActiveFeature(type);
   loadPromptTemplates(type);
   fetchKnowledgeItems({ silent: true });
 });
 
+contentKind.addEventListener("change", syncContentControls);
 taskForm.addEventListener("submit", createTask);
 conversationForm.addEventListener("submit", interpretConversation);
 createConversationTaskButton.addEventListener("click", createTaskFromConversation);
@@ -721,8 +812,9 @@ newTaskButton.addEventListener("click", () => {
 
 featureCards.forEach((card) => {
   card.addEventListener("click", () => {
-    const type = card.dataset.feature;
+    const type = card.dataset.feature === "content" ? "content_generation" : card.dataset.feature;
     taskType.value = type;
+    syncContentControls();
     renderPlan(type);
     setActiveFeature(type);
     loadPromptTemplates(type);
@@ -733,9 +825,15 @@ featureCards.forEach((card) => {
 
 navItems.forEach((item) => {
   item.addEventListener("click", () => {
-    const type = item.dataset.section;
+    const type =
+      item.dataset.section === "content" ? "content_generation" : item.dataset.section;
     if (taskPlans[type]) {
       taskType.value = type;
+      renderPlan(type);
+    }
+    if (isContentTask(type)) {
+      taskType.value = type;
+      syncContentControls();
       renderPlan(type);
     }
     navItems.forEach((navItem) => navItem.classList.remove("active"));
@@ -762,4 +860,5 @@ navItems.forEach((item) => {
 fetchTasks();
 fetchModelProvider();
 fetchKnowledgeItems();
+syncContentControls();
 loadPromptTemplates(taskType.value);

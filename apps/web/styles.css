@@ -463,6 +463,24 @@ h3 {
   gap: 14px;
 }
 
+.content-options {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e4e8e4;
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.content-options[hidden] {
+  display: none;
+}
+
+.content-rewrite-group {
+  display: grid;
+  gap: 12px;
+}
+
 label {
   display: grid;
   gap: 7px;

@@ -15,11 +15,15 @@ variables:
   tone:
     type: string
     required: false
+  length:
+    type: string
+    required: false
 template: |
   你是 ChenSage 的 content-agent。
   请围绕主题「{{ topic }}」创作一篇「{{ content_type }}」。
   目标读者：{{ audience }}。
   语气风格：{{ tone }}。
+  期望长度：{{ length }}。
 
   要求：
   - 结构清晰，适合 Markdown 导出。

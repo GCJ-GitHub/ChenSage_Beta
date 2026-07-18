@@ -15,6 +15,7 @@ def test_prompt_registry_loads_config_templates() -> None:
 
     assert {template.id for template in templates} >= {
         "content.default",
+        "content.rewrite",
         "content.standup_script",
         "generic.default",
         "research.default",
@@ -30,6 +31,7 @@ def test_prompt_registry_filters_by_task_type_alias() -> None:
 
     assert [template.id for template in templates] == [
         "content.default",
+        "content.rewrite",
         "content.standup_script",
     ]
 
@@ -69,6 +71,36 @@ def test_prompt_builder_renders_selected_template() -> None:
     assert "Template version: 0.1.0" in prompt
     assert "请围绕主题「介绍 ChenSage 阶段 3」创作一篇「公众号文章」" in prompt
     assert "目标读者：开发者" in prompt
+
+
+def test_prompt_builder_renders_rewrite_template() -> None:
+    prompt = PromptBuilder().build(
+        request=AgentExecutionRequest(
+            task_id="pytest-rewrite-prompt",
+            task_type="content_rewrite",
+            goal="把这段话改得更清晰",
+            input={
+                "content_type": "公众号文章",
+                "generated_content": "原文表达比较松散，需要重写。",
+                "rewrite_instruction": "保留原意，结构更清楚。",
+                "audience": "产品用户",
+                "tone": "专业",
+                "length": "约 500 字",
+            },
+            output_format="Markdown",
+        ),
+        agent=AgentDefinition(
+            name="content-agent",
+            role="Rewrite content.",
+        ),
+        executor="content-executor",
+        plan=[AgentExecutionStep(name="content-agent.rewrite", detail="Rewrite source.")],
+    )
+
+    assert "Template: content.rewrite" in prompt
+    assert "请根据改写要求处理原文" in prompt
+    assert "保留原意，结构更清楚" in prompt
+    assert "原文表达比较松散" in prompt
 
 
 def test_execute_task_includes_rendered_template_prompt() -> None:

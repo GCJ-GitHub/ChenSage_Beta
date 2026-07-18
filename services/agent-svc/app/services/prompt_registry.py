@@ -81,6 +81,9 @@ class PromptRegistry:
             if by_name is not None:
                 return by_name
         candidates = self.list_templates(task_type=task_type)
+        exact_candidates = [template for template in candidates if template.task_type == task_type]
+        if exact_candidates:
+            return exact_candidates[0]
         if candidates:
             return candidates[0]
         fallback = self._templates.get("generic.default") or next(
@@ -155,6 +158,9 @@ def build_template_values(
     values.setdefault("output_format", output_format or "Markdown")
     values.setdefault("audience", "未指定")
     values.setdefault("tone", "未指定")
+    values.setdefault("length", task_input.get("set_length") or "未指定")
+    values.setdefault("set_length", task_input.get("length") or "未指定")
+    values.setdefault("rewrite_instruction", goal)
     values.setdefault("sources", task_input.get("source") or task_input.get("urls") or [])
     values.setdefault("resume_summary", task_input.get("resume") or "未提供")
     values.setdefault("job_description", task_input.get("job_description") or "未提供")

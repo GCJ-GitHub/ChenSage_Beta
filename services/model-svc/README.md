@@ -28,6 +28,10 @@ POST /internal/generate
 它返回稳定的 Markdown、summary、provider/model 元数据和 token usage，用于验证
 agent-svc -> model-svc -> task-svc 的模型调用边界。
 
+阶段 6 起，deterministic provider 会对 `content-agent` 的内容创作、改写和脱口秀稿
+返回更接近真实产品输出的 Markdown 初稿 / 改写稿，同时保留 Prompt Snapshot，方便
+在没有真实模型 Key 的本地环境里验证内容主链路。
+
 切换为 `openai_compatible` 后，`model-svc` 会通过
 `<base_url>/chat/completions` 调用真实 Provider。API Key 可以来自环境变量或
 运行时设置接口；响应只返回 `api_key_configured` 和脱敏后的 `api_key_preview`，
