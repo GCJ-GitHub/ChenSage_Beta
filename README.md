@@ -58,7 +58,7 @@ docker compose --env-file infra/docker/.env -f infra/docker/docker-compose.yml u
 .\.venv\Scripts\python.exe -m compileall services workers packages scripts
 ```
 
-Stage 1-6 local task loop:
+Stage 1-7 local task loop:
 
 ```bash
 make dev-stage1
@@ -67,7 +67,8 @@ make dev-stage1
 This starts Docker Compose dependencies, runs task-svc and knowledge-base-svc migrations, then starts
 task-svc on `http://127.0.0.1:8011`, model-svc on `http://127.0.0.1:8012`,
 agent-svc on `http://127.0.0.1:8013`, knowledge-base-svc on
-`http://127.0.0.1:8014`, and the `agent-worker` consumer.
+`http://127.0.0.1:8014`, eval-svc on `http://127.0.0.1:8015`, and the
+`agent-worker` consumer.
 
 常用本地服务入口：
 
@@ -78,6 +79,7 @@ agent-svc on `http://127.0.0.1:8013`, knowledge-base-svc on
 | `make run-model-svc` | 启动模型配置服务，默认 `http://localhost:8012` |
 | `make run-agent-svc` | 启动 Agent 编排服务，默认 `http://localhost:8013` |
 | `make run-knowledge-base-svc` | 启动知识库服务，默认 `http://localhost:8014` |
+| `make run-eval-svc` | 启动评价服务，默认 `http://localhost:8015` |
 | `make run-agent-worker` | 启动阶段 0 worker 占位入口 |
 
 真实 `.env` 不进入 Git。大模型 API Key 只通过 `model-svc` 的配置边界读取。
@@ -433,6 +435,7 @@ services/*/config/             服务自己的配置读取边界
 - `agent-svc` 的最小 `context-engine` 会在执行前按任务类型检索 active 知识条目，将知识片段和来源注入 Prompt，并把检索记录写入 trace / artifacts。
 - `agent-svc` 的 `/conversation/interpret` 提供阶段 5 对话式任务理解入口，会识别内容创作 / 改写目标、选择提示词模板、预取知识库来源，并返回可直接交给 `task-svc` 创建任务的草稿。
 - 阶段 6 起，内容创作 / 改写任务会携带内容类型、目标读者、语气、长度、改写原文和改写要求；`content-agent` 会输出内容任务参数 artifact，并在 deterministic provider 下返回可读的初稿或改写稿。
+- 阶段 7 起，`eval-svc` 提供 `/internal/evaluate`，`agent-svc` 会在内容生成后写入 `eval_report` artifact；前端任务详情展示评分、理由、问题定位、修改建议和学习候选。
 
 ## 推荐落地路线
 

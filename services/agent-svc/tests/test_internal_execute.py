@@ -89,6 +89,12 @@ def test_content_generation_includes_phase6_content_spec() -> None:
     assert artifact["content_type"] == "公众号文章"
     assert artifact["audience"] == "产品用户"
     assert "期望长度：约 800 字" in response.result.markdown
+    assert any(step.name == "eval.completed" for step in response.trace)
+    eval_artifact = next(
+        artifact for artifact in response.result.artifacts if artifact["type"] == "eval_report"
+    )
+    assert eval_artifact["overall_score"] == 4.2
+    assert eval_artifact["learning_candidates"][0]["status"] == "candidate"
 
 
 def test_content_rewrite_uses_rewrite_plan_and_artifact() -> None:
@@ -114,6 +120,20 @@ def test_content_rewrite_uses_rewrite_plan_and_artifact() -> None:
     assert artifact["mode"] == "rewrite"
     assert artifact["source_text_preview"] == "这是一段需要改写的原文。"
     assert "Template: content.rewrite" in response.result.markdown
+    assert any(step.name == "eval.completed" for step in response.trace)
+
+
+def test_research_task_does_not_run_content_evaluation() -> None:
+    response = execute_task(
+        AgentExecutionRequest(
+            task_id="pytest-research-no-eval",
+            task_type="research",
+            goal="整理资料。",
+        )
+    )
+
+    assert not any(step.name.startswith("eval.") for step in response.trace)
+    assert not any(artifact.get("type") == "eval_report" for artifact in response.result.artifacts)
 
 
 @pytest.mark.parametrize(

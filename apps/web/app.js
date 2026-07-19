@@ -67,6 +67,14 @@ const statusClasses = {
   expired: "failed",
 };
 
+const evalDimensionLabels = {
+  factual_accuracy: "事实准确性",
+  structure_integrity: "结构完整性",
+  style_match: "风格匹配度",
+  platform_fit: "平台适配度",
+  usability: "可直接使用度",
+};
+
 const taskType = document.querySelector("#task-type");
 const taskGoal = document.querySelector("#task-goal");
 const taskTemplate = document.querySelector("#task-template");
@@ -349,6 +357,78 @@ function formatTaskCost(task) {
   return task.result?.provider || "-";
 }
 
+function findArtifact(task, artifactType) {
+  return (task?.result?.artifacts || []).find((artifact) => artifact.type === artifactType);
+}
+
+function renderEvalReport(task) {
+  const report = findArtifact(task, "eval_report");
+  if (!report) {
+    return "";
+  }
+  const scores = Object.entries(report.scores || {})
+    .map(
+      ([key, value]) => `
+        <article class="score-item">
+          <span>${escapeHtml(evalDimensionLabels[key] || key)}</span>
+          <strong>${escapeHtml(value)} / 5</strong>
+          <p>${escapeHtml(report.score_reasons?.[key] || "暂无理由")}</p>
+        </article>
+      `,
+    )
+    .join("");
+  const issues = (report.issue_locations || [])
+    .map(
+      (issue) => `
+        <li>
+          <strong>${escapeHtml(issue.location)} · ${escapeHtml(issue.severity)}</strong>
+          <p>${escapeHtml(issue.issue)}</p>
+          <span>${escapeHtml(issue.suggestion)}</span>
+        </li>
+      `,
+    )
+    .join("");
+  const advice = (report.revision_advice || [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  const learning = (report.learning_candidates || [])
+    .map(
+      (item) => `
+        <li>
+          <strong>${escapeHtml(item.kind)} · ${Math.round((item.confidence || 0) * 100)}%</strong>
+          <p>${escapeHtml(item.summary)}</p>
+        </li>
+      `,
+    )
+    .join("");
+  return `
+    <section class="eval-report">
+      <div class="eval-heading">
+        <div>
+          <p class="panel-label">评价报告</p>
+          <h4>${escapeHtml(report.evaluator || "eval-svc")}</h4>
+        </div>
+        <strong>${escapeHtml(report.overall_score)} / 5</strong>
+      </div>
+      <div class="score-grid">${scores}</div>
+      <div class="eval-columns">
+        <section>
+          <h4>问题定位</h4>
+          <ol class="eval-list">${issues || "<li>暂无明显问题。</li>"}</ol>
+        </section>
+        <section>
+          <h4>修改建议</h4>
+          <ol class="eval-list">${advice || "<li>暂无建议。</li>"}</ol>
+        </section>
+        <section>
+          <h4>学习候选</h4>
+          <ol class="eval-list">${learning || "<li>暂无候选。</li>"}</ol>
+        </section>
+      </div>
+    </section>
+  `;
+}
+
 function renderTaskDetail(task) {
   if (!task) {
     taskDetail.innerHTML = `
@@ -372,6 +452,7 @@ function renderTaskDetail(task) {
   const result = task.result?.markdown
     ? `<pre>${escapeHtml(task.result.markdown)}</pre>`
     : '<p class="empty-state">任务尚未产生最终结果。</p>';
+  const evaluation = renderEvalReport(task);
 
   taskDetail.innerHTML = `
     <div class="task-detail-heading">
@@ -392,6 +473,7 @@ function renderTaskDetail(task) {
         ${result}
       </section>
     </div>
+    ${evaluation}
   `;
 }
 

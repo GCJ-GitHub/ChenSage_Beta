@@ -83,6 +83,12 @@ Agent 选择和可直接提交到 `task-svc` 的任务草稿。
 - `content_generation` 默认使用 `content.default`，`content_rewrite` 默认使用 `content.rewrite`，脱口秀稿优先使用 `content.standup_script`。
 - 执行结果会写入 `content_task_spec` artifact，保留本次内容类型、受众、语气、长度和改写原文预览。
 
+阶段 7 起，内容任务生成完成后会调用 `eval-svc`：
+
+- 默认通过 `EVAL_SVC_URL=http://127.0.0.1:8015` 访问 `/internal/evaluate`。
+- 成功时将 `eval_report` 写入 result artifacts，并在 trace 中记录 `eval.completed`。
+- 如果 `eval-svc` 暂不可用，任务继续成功写回，trace 记录 `eval.unavailable`，避免评价服务阻断主链路。
+
 Run tests:
 
 ```bash

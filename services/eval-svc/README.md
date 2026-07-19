@@ -33,3 +33,20 @@ usable_highlights
 source_risks
 learning_candidates
 ```
+
+阶段 7 当前实现提供 deterministic 评价 API：
+
+```bash
+POST /internal/evaluate
+```
+
+请求包含 task id、任务类型、用户目标、生成内容和评价上下文；响应返回
+`eval_report`，包含总分、分维度评分、评分理由、问题定位、修改建议、可保留优点、
+来源风险和 learning candidates。当前版本不调用真实模型，用稳定规则先跑通
+`agent-svc -> eval-svc -> task-svc -> apps/web` 的反馈闭环。
+
+Run tests:
+
+```bash
+make test-eval-svc
+```

@@ -67,6 +67,52 @@ class FakeKnowledgeBaseClient:
         ][:limit]
 
 
+class FakeEvalClient:
+    def evaluate(self, *, request, generated_content, context):
+        del generated_content
+        return {
+            "type": "eval_report",
+            "task_id": request.task_id,
+            "task_type": request.task_type,
+            "overall_score": 4.2,
+            "scores": {
+                "factual_accuracy": 4,
+                "structure_integrity": 5,
+                "style_match": 4,
+                "platform_fit": 4,
+                "usability": 4,
+            },
+            "score_reasons": {
+                "factual_accuracy": "Fake evaluation saw reusable knowledge context.",
+                "structure_integrity": "Fake evaluation saw Markdown structure.",
+                "style_match": "Fake evaluation saw tone context.",
+                "platform_fit": "Fake evaluation saw content type.",
+                "usability": "Fake evaluation marks this as usable.",
+            },
+            "issue_locations": [
+                {
+                    "location": "结果尾部",
+                    "issue": "Prompt Snapshot is visible.",
+                    "severity": "low",
+                    "suggestion": "Hide debug content before export.",
+                }
+            ],
+            "revision_advice": ["Add one concrete example."],
+            "usable_highlights": ["Markdown structure is present."],
+            "source_risks": ["Fake source risk."],
+            "learning_candidates": [
+                {
+                    "kind": "structure_pattern",
+                    "summary": "Keep structured Markdown.",
+                    "evidence": str(context.get("content_task_spec") or {}),
+                    "confidence": 0.8,
+                    "status": "candidate",
+                }
+            ],
+            "evaluator": "fake-eval-svc",
+        }
+
+
 @pytest.fixture(autouse=True)
 def fake_model_client(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
@@ -74,6 +120,7 @@ def fake_model_client(monkeypatch: pytest.MonkeyPatch) -> None:
         "agent_harness",
         AgentHarness(
             model_client=FakeModelClient(),
+            eval_client=FakeEvalClient(),
             context_engine=KnowledgeContextEngine(client=FakeKnowledgeBaseClient()),
         ),
     )
